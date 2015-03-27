@@ -1,0 +1,151 @@
+__author__ = 'Michael Redmond'
+
+import os
+import glob
+import imp
+import importlib
+from collections import OrderedDict
+
+from pluginbase import PluginBase
+
+
+class Plugin(object):
+    def __init__(self, info):
+        super(Plugin, self).__init__()
+
+        self._info = info
+        self._class = None
+        self._object = None
+
+    def set_plugin_class(self, clss):
+        self._class = clss
+        self._object = None
+
+    def get_plugin_class(self):
+        return self._class
+
+    def get_info(self):
+        return self._info
+
+    def load_plugin(self):
+        if self._object is None:
+            self._object = self._class()
+
+        return self._object
+
+
+class PluginManager(object):
+    def __init__(self):
+        super(PluginManager, self).__init__()
+
+        self._plugins = None
+
+        self._plugin_folders = []
+
+        self._plugin_base = PluginBase(package='plugins')
+
+        self._plugin_module = imp.new_module('plugins')
+
+        self._plugin_source = None
+
+    def add_plugin_folder(self, folder):
+        if os.path.exists(folder):
+            if folder not in self._plugin_folders:
+                self._plugin_folders.append(folder)
+        else:
+            print "%s doesn't exist!\n" % folder
+
+    def remove_plugin_folder(self, folder):
+        try:
+            index = self._plugin_folders.index(folder)
+            del self._plugin_folders[index]
+        except Exception:
+            pass
+
+    def collect_plugins(self):
+        self._plugins = OrderedDict()
+
+        self._plugin_source = self._plugin_base.make_plugin_source(searchpath=self._plugin_folders)
+
+        for folder in self._plugin_folders:
+            for file in glob.glob("%s/*.plugin" % folder):
+                file = os.path.basename(file)
+                self.read_plugin(folder, file)
+
+    def get_plugins(self):
+        return self._plugins
+
+    def read_plugin(self, folder, file):
+
+        plugin_file = "%s/%s" % (folder, file)
+
+        if not os.path.exists(plugin_file):
+            print "Plugin %s doesn't exist!\n" % plugin_file
+            return
+
+        with open(plugin_file, 'r') as f:
+            lines = f.readlines()
+
+        info = {'Core': {}, 'Description': {}}
+
+        info_ = None
+
+        for line in lines:
+
+            line = line.replace('\n', '').replace('\r', '')
+
+            if line[:6] == '[Core]':
+                info_ = info['Core']
+                continue
+            elif line[:13] == '[Description]':
+                info_ = info['Description']
+                continue
+
+            data = line.split('=')
+
+            if len(data) < 2:
+                continue
+
+            info_[data[0].strip()] = data[1].strip()
+
+        category = info['Core']['Category']
+        module_name = info['Core']['Module']
+        plugin_name = info['Core']['Name']
+        mount_name = info['Core']['Mount']
+
+        plugin_class = None
+
+        with self._plugin_source:
+            import_statement = "from plugins.%s import %s" % (module_name, mount_name)
+            exec(import_statement)
+
+            copy_statement = "self._plugin_module.%s = %s" % (mount_name, mount_name)
+            exec(copy_statement)
+
+            del_statement = "del %s" % mount_name
+            exec(del_statement)
+
+        if category not in self._plugins.keys():
+            self._plugins[category] = OrderedDict()
+
+        if plugin_name in self._plugins[category].keys():
+            print "Plugin %s already exists!\n" % plugin_file
+            return
+
+        new_plugin = Plugin(info)
+        new_plugin.set_plugin_class(getattr(self._plugin_module, mount_name))
+
+        self._plugins[category][plugin_name] = new_plugin
+
+        del plugin_class
+
+
+if __name__ == '__main__':
+    pm = PluginManager()
+    pm.add_plugin_folder('./examples')
+    pm.collect_plugins()
+
+    plugin = pm.get_plugins()['category1']['Plugin1']
+    plugin.load_plugin().some_method()
+
+
