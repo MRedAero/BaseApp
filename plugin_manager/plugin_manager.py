@@ -3,10 +3,7 @@ __author__ = 'Michael Redmond'
 import os
 import glob
 import imp
-import importlib
 from collections import OrderedDict
-
-from pluginbase import PluginBase
 
 
 class Plugin(object):
@@ -33,6 +30,9 @@ class Plugin(object):
 
         return self._object
 
+    def new_plugin(self):
+        return self._class()
+
 
 class PluginManager(object):
     def __init__(self):
@@ -41,12 +41,6 @@ class PluginManager(object):
         self._plugins = None
 
         self._plugin_folders = []
-
-        self._plugin_base = PluginBase(package='plugins')
-
-        self._plugin_module = imp.new_module('plugins')
-
-        self._plugin_source = None
 
     def add_plugin_folder(self, folder):
         if os.path.exists(folder):
@@ -64,8 +58,6 @@ class PluginManager(object):
 
     def collect_plugins(self):
         self._plugins = OrderedDict()
-
-        self._plugin_source = self._plugin_base.make_plugin_source(searchpath=self._plugin_folders)
 
         for folder in self._plugin_folders:
             for file in glob.glob("%s/*.plugin" % folder):
@@ -108,36 +100,37 @@ class PluginManager(object):
 
             info_[data[0].strip()] = data[1].strip()
 
+        try:
+            module_name = info['Core']['Module']
+        except KeyError:
+            try:
+                module_name = info['Core']['Package']
+            except KeyError:
+                print "Module name is not defined!\n"
+                return
+
         category = info['Core']['Category']
-        module_name = info['Core']['Module']
         plugin_name = info['Core']['Name']
         mount_name = info['Core']['Mount']
 
-        plugin_class = None
+        fp, pathname, description = imp.find_module(module_name, [folder])
+        try:
+            package = imp.load_module(module_name, fp, pathname, description)
+        finally:
+            if fp:
+                fp.close()
 
-        with self._plugin_source:
-            import_statement = "from plugins.%s import %s" % (module_name, mount_name)
-            exec(import_statement)
-
-            copy_statement = "self._plugin_module.%s = %s" % (mount_name, mount_name)
-            exec(copy_statement)
-
-            del_statement = "del %s" % mount_name
-            exec(del_statement)
+        new_plugin = Plugin(info)
+        new_plugin.set_plugin_class(getattr(package, mount_name))
 
         if category not in self._plugins.keys():
             self._plugins[category] = OrderedDict()
 
         if plugin_name in self._plugins[category].keys():
-            print "Plugin %s already exists!\n" % plugin_file
+            print "Plugin %s already exists in category %s!\n" % (plugin_name, category)
             return
 
-        new_plugin = Plugin(info)
-        new_plugin.set_plugin_class(getattr(self._plugin_module, mount_name))
-
         self._plugins[category][plugin_name] = new_plugin
-
-        del plugin_class
 
 
 if __name__ == '__main__':
