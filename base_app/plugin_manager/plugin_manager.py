@@ -6,6 +6,9 @@ import imp
 from collections import OrderedDict
 
 
+#TODO: convert print statements into signals and/or logs
+
+
 class Plugin(object):
     def __init__(self, info):
         super(Plugin, self).__init__()

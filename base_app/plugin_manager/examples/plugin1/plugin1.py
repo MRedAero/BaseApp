@@ -1,6 +1,6 @@
 __author__ = 'Michael Redmond'
 
-from .subpackage import some_variable
+from subpackage import some_variable
 
 
 class Plugin1(object):
