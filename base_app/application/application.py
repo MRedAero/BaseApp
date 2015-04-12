@@ -47,3 +47,6 @@ class BaseApplication(object):
 
     def start(self):
         sys.exit(self._app.exec_())
+
+    def get_qapp(self):
+        return self._app
