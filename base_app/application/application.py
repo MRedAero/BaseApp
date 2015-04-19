@@ -4,14 +4,13 @@ __author__ = 'Michael Redmond'
 from base_app.license_manager import license_manager
 license_manager.check_license()
 
-from PySide import QtGui
+from PyQt4 import QtGui, QtCore
+QtCore.Signal = QtCore.pyqtSignal
 import sys
 
-from base_app.utilities import RepeatedTimer
+from base_app.application.adaptor import BaseAppAdaptor
 
-from .model import Model
-from .view import View
-from .controller import Controller
+from base_app.utilities import RepeatedTimer
 
 
 class BaseQApplication(QtGui.QApplication):
@@ -27,26 +26,26 @@ class BaseQApplication(QtGui.QApplication):
 
 
 class BaseApplication(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         super(BaseApplication, self).__init__()
 
-        self._app = BaseQApplication(*args, **kwargs)
+        self._app = BaseQApplication([])
 
-        self._model = None
-        self._view = None
-        self._controller = None
+        self._adaptor = self.create_adaptor_object(self._app)
 
-    def build(self, controller=None):
+    @property
+    def create_adaptor_object(self):
+        return BaseAppAdaptor
 
-        if controller is None:
-            controller = Controller(self._app, Model(), View())
-
-        self._model = controller.get_model()
-        self._view = controller.get_view()
-        self._controller = controller
+    def show(self):
+        self._adaptor.show_view()
 
     def start(self):
         sys.exit(self._app.exec_())
 
-    def get_qapp(self):
-        return self._app
+
+
+if __name__ == "__main__":
+    app = BaseApplication()
+    app.show()
+    app.start()
