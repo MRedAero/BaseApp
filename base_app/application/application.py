@@ -8,8 +8,7 @@ from PyQt4 import QtGui, QtCore
 QtCore.Signal = QtCore.pyqtSignal
 import sys
 
-from base_app.application.adaptor import BaseAppAdaptor
-
+from base_app.application.core import BaseAppProgramController
 from base_app.utilities import RepeatedTimer
 
 
@@ -21,7 +20,6 @@ class BaseQApplication(QtGui.QApplication):
 
     def exec_(self):
         self._timer.start()
-
         super(BaseQApplication, self).exec_()
 
 
@@ -30,19 +28,17 @@ class BaseApplication(object):
         super(BaseApplication, self).__init__()
 
         self._app = BaseQApplication([])
-
-        self._adaptor = self.create_adaptor_object(self._app)
+        self._program_controller = self.create_program_controller_object(self._app)
 
     @property
-    def create_adaptor_object(self):
-        return BaseAppAdaptor
+    def create_program_controller_object(self):
+        return BaseAppProgramController
 
     def show(self):
-        self._adaptor.show_view()
+        self._program_controller.show_view()
 
     def start(self):
         sys.exit(self._app.exec_())
-
 
 
 if __name__ == "__main__":

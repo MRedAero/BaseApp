@@ -1,3 +1,3 @@
 __author__ = 'Michael Redmond'
 
-from view_core import BaseAppViewCore
+from view_controller import BaseAppViewController

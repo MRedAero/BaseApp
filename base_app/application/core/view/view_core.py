@@ -23,11 +23,6 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self.grid_layout.setSpacing(0)
         self.grid_layout.setObjectName("grid_layout")
 
-        self.tab_widget = QtGui.QTabWidget(self.central_widget)
-        self.tab_widget.setObjectName("tab_widget")
-
-        self.grid_layout.addWidget(self.tab_widget, 0, 0, 1, 1)
-
         self.toolbar = self.addToolBar('Toolbar')
 
         self.menu_bar = QtGui.QMenuBar(self)
@@ -46,17 +41,6 @@ class BaseAppViewCore(QtGui.QMainWindow):
         QtCore.QMetaObject.connectSlotsByName(self)
 
         self.build_menu()
-
-    def add_tab(self, tab, name):
-
-        self.tab_widget.addTab(tab, name)
-        self.tab_widget.setCurrentIndex(self.tab_widget.count()-1)
-
-        return True
-
-    def remove_tab(self, index):
-
-        self.tab_widget.removeTab(index)
 
     def build_menu(self):
 
@@ -114,7 +98,7 @@ if __name__ == '__main__':
 
     app = QtGui.QApplication(sys.argv)
 
-    main_window = BaseMainWindow()
+    main_window = BaseAppViewCore()
 
     main_window.show()
 

@@ -1,15 +1,12 @@
 __author__ = 'Michael Redmond'
 
 
-from base_app.application.core.model import BaseAppModelCore
+from model_core import BaseAppModelCore
 
 
 class BaseAppModelController(object):
-    def __init__(self, adaptor):
+    def __init__(self):
         super(BaseAppModelController, self).__init__()
-
-        self._adaptor = adaptor
-        """:type: base_app.application.adaptor.BaseAppAdaptor"""
 
         self._models = []
         """:type: list [BaseAppModelCore]"""
