@@ -56,6 +56,9 @@ class BaseAppViewController(object):
     def set_active_view(self, index):
         self._mdi_controller.set_active_document(index)
 
+    def get_active_view(self):
+        return self._mdi_controller.get_active_document()
+
     def _file_open(self):
         # noinspection PyCallByClass
         filename = QtGui.QFileDialog.getOpenFileName(self._view, 'Open File', "",

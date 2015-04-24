@@ -26,13 +26,11 @@ class BaseAppProgramController(object):
 
         self.new_file()
 
-    @property
     def create_model_controller_object(self):
-        return BaseAppModelController
+        return BaseAppModelController()
 
-    @property
-    def create_view_controller_object(self):
-        return BaseAppViewController
+    def create_view_controller_object(self, app):
+        return BaseAppViewController(app)
 
     def show_view(self):
         self._view_controller.show()
