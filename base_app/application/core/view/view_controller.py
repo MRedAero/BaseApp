@@ -35,7 +35,7 @@ class BaseAppViewController(object):
         self._view.action_file_save_as.triggered.connect(self._file_save_as)
         self._view.action_file_close.triggered.connect(self._file_close)
 
-        self._view.action_file_settings_plugins.triggered.connect(self._file_settings_plugins)
+        self._view.action_file_settings.triggered.connect(self._file_settings)
         self._view.action_file_exit.triggered.connect(self._file_exit)
 
     def show(self):
@@ -87,8 +87,14 @@ class BaseAppViewController(object):
     def _file_save_as(self):
         print 'file save as'
 
-    def _file_settings_plugins(self):
-        print 'file settings plugins'
+    def _file_settings(self):
+        pub.publish('program.settings')
 
     def _file_exit(self):
         print 'file exit'
+
+    def add_dock_widget(self, dock_area, dock_widget):
+        self._view.addDockWidget(dock_area, dock_widget)
+
+    def remove_dock_widget(self, dock_widget):
+        self._view.removeDockWidget(dock_widget)

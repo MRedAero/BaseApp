@@ -1,5 +1,8 @@
 __author__ = 'Michael Redmond'
 
+import sys
+import os
+
 
 def new_name(names, prefix='Document'):
     i = len(names) + 1
@@ -16,3 +19,15 @@ def new_name(names, prefix='Document'):
                 break
 
     return _first_name
+
+
+def get_path():
+    if hasattr(sys, "frozen"):
+        main_dir = os.path.dirname(sys.executable)
+        full_real_path = os.path.realpath(sys.executable)
+    else:
+        script_dir = os.path.dirname(__file__)
+        main_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        full_real_path = os.path.realpath(sys.argv[0])
+
+    return main_dir

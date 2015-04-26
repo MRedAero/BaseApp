@@ -17,8 +17,8 @@ class Plugin(object):
         self._class = None
         self._object = None
 
-    def set_plugin_class(self, clss):
-        self._class = clss
+    def set_plugin_class(self, class_):
+        self._class = class_
         self._object = None
 
     def get_plugin_class(self):
@@ -27,14 +27,25 @@ class Plugin(object):
     def get_info(self):
         return self._info
 
-    def load_plugin(self):
+    def load_plugin(self, *args, **kwargs):
         if self._object is None:
-            self._object = self._class()
+            self._object = self._class(*args, **kwargs)
 
         return self._object
 
+    def is_loaded(self):
+        return self._object is not None
+
     def new_plugin(self):
         return self._class()
+
+    def unload(self):
+        try:
+            self._object.unload()
+        except AttributeError:
+            pass
+
+        self._object = None
 
 
 class PluginManager(object):
@@ -44,6 +55,9 @@ class PluginManager(object):
         self._plugins = None
 
         self._plugin_folders = []
+
+    def get_plugin_folders(self):
+        return self._plugin_folders
 
     def add_plugin_folder(self, folder):
         if os.path.exists(folder):
@@ -59,8 +73,16 @@ class PluginManager(object):
         except Exception:
             pass
 
+        for category in self._plugins.keys():
+            for name in self._plugins[category].keys():
+                info = self._plugins[category][name]
+
+                if info['Folder'] == folder:
+                    del self._plugins[category][name]
+
     def collect_plugins(self):
-        self._plugins = OrderedDict()
+        if self._plugins is None:
+            self._plugins = OrderedDict()
 
         for folder in self._plugin_folders:
             for file in glob.glob("%s/*.plugin" % folder):
@@ -81,7 +103,7 @@ class PluginManager(object):
         with open(plugin_file, 'r') as f:
             lines = f.readlines()
 
-        info = {'Core': {}, 'Description': {}}
+        info = {'Core': {}, 'Description': {}, 'Folder': folder, 'File': file}
 
         info_ = None
 
@@ -130,6 +152,13 @@ class PluginManager(object):
             self._plugins[category] = OrderedDict()
 
         if plugin_name in self._plugins[category].keys():
+            plugin_info = self._plugins[category][plugin_name].get_info()
+
+            if folder == plugin_info['Folder'] and file == plugin_info['File']:
+                # same plugin already exists, just ignore
+                return
+
+            # same plugin category and name, but folder or file isn't the same
             print "Plugin %s already exists in category %s!\n" % (plugin_name, category)
             return
 

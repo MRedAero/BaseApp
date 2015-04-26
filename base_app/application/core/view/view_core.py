@@ -67,9 +67,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
         """:type: QtGui.QAction"""
         self.file_menu.add_separator('sep1')
 
-        self.file_settings = self.file_menu.add_menu('Settings')
-        """:type: QtGui.QMenu"""
-        self.action_file_settings_plugins = self.file_settings.add_action('Plugins...').get_action()
+        self.action_file_settings = self.file_menu.add_action('Settings...').get_action()
         """:type: QtGui.QAction"""
 
         self.file_menu.add_separator('sep2')
