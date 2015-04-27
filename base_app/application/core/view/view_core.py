@@ -23,10 +23,18 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self.grid_layout.setSpacing(0)
         self.grid_layout.setObjectName("grid_layout")
 
-        self.tab_widget = QtGui.QTabWidget(self.central_widget)
-        self.tab_widget.setObjectName("tab_widget")
+        #todo: remove... deprecated to support mdi
+        #self.tab_widget = QtGui.QTabWidget(self.central_widget)
+        #self.tab_widget.setObjectName("tab_widget")
+        #self.grid_layout.addWidget(self.tab_widget, 0, 0, 1, 1)
 
-        self.grid_layout.addWidget(self.tab_widget, 0, 0, 1, 1)
+        self.mdiarea = QtGui.QMdiArea(self.central_widget)
+        #self.mdiarea.setDocumentMode(True)
+        self.mdiarea.setTabsClosable(True)
+        self.mdiarea.setTabsMovable(True)
+        self.mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
+        self.grid_layout.addWidget(self.mdiarea, 0, 0, 1, 1)
+
 
         self.toolbar = self.addToolBar('Toolbar')
 
@@ -47,6 +55,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
 
         self.build_menu()
 
+    #todo: remove... deprecated to support mdi
     def add_tab(self, tab, name):
 
         self.tab_widget.addTab(tab, name)
@@ -54,6 +63,28 @@ class BaseAppViewCore(QtGui.QMainWindow):
 
         return True
 
+    def add_subwindow(self, window):
+
+
+        newwin = self.mdiarea.addSubWindow(window)
+
+        # Define minimum size...
+        golden_ratio = 1.618
+        if self.width() > 500.:
+            minwidth = 350.
+        else:
+            minwidth = 100.
+
+        newwin.setMinimumSize(minwidth,minwidth / golden_ratio)
+        newwin.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        newwin.setOption(QtGui.QMdiSubWindow.RubberBandResize)
+        newwin.setOption(QtGui.QMdiSubWindow.RubberBandMove)
+
+        newwin.show()
+
+        return True
+
+    #todo: remove... deprecated to support mdi
     def remove_tab(self, index):
 
         self.tab_widget.removeTab(index)
@@ -63,6 +94,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self._build_file_menu()
         self._build_edit_menu()
         self._build_tool_menu()
+        self._build_window_menu()
         self._build_help_menu()
 
         self.menu_controller.reorganize()
@@ -107,6 +139,18 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self.help_menu = self.menu_controller.add_menu('Help')
         self.action_help_about = self.help_menu.add_action('About...').get_action()
         """:type: QtGui.QAction"""
+
+    def _build_window_menu(self):
+
+        self.window_menu = self.menu_controller.add_menu('Window')
+        """:type: QtGui.QMenu"""
+        self.action_window_htile = self.window_menu.add_action('Tile Horizontally').get_action()
+        """:type: QtGui.QAction"""
+        self.action_window_vtile = self.window_menu.add_action('Tile Vertically').get_action()
+        """:type: QtGui.QAction"""
+        self.action_window_cascade = self.window_menu.add_action('Cascade').get_action()
+        """:type: QtGui.QAction"""
+
 
 
 if __name__ == '__main__':
