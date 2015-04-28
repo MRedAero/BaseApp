@@ -1,0 +1,8 @@
+[Core]
+Name = Toolbar in a Dock Widget
+Module = toolbar_plugin
+Category = Misc
+Mount = ToolbarPlugin
+
+[Description]
+Author = Michael Redmond

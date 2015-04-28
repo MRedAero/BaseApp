@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Toolbar</class>
+ <widget class="QDockWidget" name="Toolbar">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>216</width>
+    <height>184</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Toolbar</string>
+  </property>
+  <widget class="QWidget" name="dockWidgetContents"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

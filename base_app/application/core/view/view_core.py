@@ -9,6 +9,10 @@ class BaseAppViewCore(QtGui.QMainWindow):
     def __init__(self):
         super(BaseAppViewCore, self).__init__()
 
+        flags = QtGui.QMainWindow.AllowNestedDocks | QtGui.QMainWindow.AllowTabbedDocks
+
+        self.setDockOptions(flags)
+
         self.setObjectName("BaseMainWindow")
         self.resize(850, 600)
 
