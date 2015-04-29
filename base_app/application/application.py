@@ -21,6 +21,7 @@ class BaseQApplication(QtGui.QApplication):
     def exec_(self):
         self._timer.start()
         super(BaseQApplication, self).exec_()
+        self._timer.stop()
 
 
 class BaseApplication(object):

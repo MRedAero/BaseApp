@@ -21,6 +21,8 @@ class MDIController(object):
         self._mdiarea_tabbar = self._mdiarea.findChild(QtGui.QTabBar)
         self._mdiarea_tabbar.setExpanding(False)
 
+        self._mdiarea.subWindowActivated.connect(self._update_current_document)
+
         self._view.grid_layout.addWidget(self._mdiarea, 0, 0, 1, 1)
 
         ###  Issue with this signal...  Migrate to add signal: aboutToActivate to the subwindow when created
@@ -32,14 +34,14 @@ class MDIController(object):
 
     def add_document(self, window):
 
+        self._skip = 1
+
         # Sub Class
         #new_subwindow = SubWindow()
         new_subwindow = QtGui.QMdiSubWindow()
         new_subwindow.setWindowTitle(window)
         #new_subwindow.maximized.connect(lambda: self.set_tab_view(new_subwindow))
         self._mdiarea.addSubWindow(new_subwindow)
-
-        new_subwindow.aboutToActivate.connect(self._update_current_document)
 
         # Define minimum size...
         golden_ratio = 1.618
@@ -49,25 +51,45 @@ class MDIController(object):
             minwidth = 100.
 
         new_subwindow.setMinimumSize(minwidth,minwidth / golden_ratio)
-        new_subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        #new_subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         new_subwindow.setOption(QtGui.QMdiSubWindow.RubberBandResize)
         new_subwindow.setOption(QtGui.QMdiSubWindow.RubberBandMove)
         new_subwindow.showMaximized()
         new_subwindow.show()
+
+        #new_subwindow.grid_layout = new_subwindow.layout()
+        new_subwindow.closeEvent = self._subwindow_close_event
 
         self._current_index = len(self._mdiarea.subWindowList()) - 1
         self._active_document = self._mdiarea.subWindowList()[-1]
 
         return True
 
+    # this should be implemented by subclassing QMdiSubWindow
+    def _subwindow_close_event(self, event):
+        active_doc = self._active_document
+
+        if not active_doc:
+            return
+
+        index = self._mdiarea.subWindowList().index(active_doc)
+
+        pub.publish('program.close_file', index=index)
+
+        #event.ignore()
+
+        if self._active_document:
+            self._active_document.showMaximized()
+
     def close_document(self, index):
         self._mdiarea.removeSubWindow(self._mdiarea.subWindowList()[index])
 
-    def set_active_document(self, index):
-        #print("Set Active Document = {0}".format(index))
-        self._current_index = index
-        self._active_document = self._mdiarea.setActiveSubWindow(self._mdiarea.subWindowList()[index])
+        if not self._mdiarea.subWindowList():
+            self._active_document = None
 
+    def set_active_document(self, index):
+        self._current_index = index
+        self._active_document = self._mdiarea.subWindowList()[index]
 
     def get_current_index(self):
         return self._current_index
@@ -75,21 +97,20 @@ class MDIController(object):
     def get_active_document(self):
         return self._active_document
 
-    def _update_current_document(self):
-        if self._skip:  # why is this needed to prevent infinite recursion?  probably should fix
+    def _update_current_document(self, active_doc):
+        if self._skip:
             self._skip -= 1
+            return
+
+        if not active_doc:
             return
 
         if self._current_index == -1:
             pub.publish('program.new_file')
             return
 
-        sub_windows = self._mdiarea.subWindowList()
-        active_sub = self._mdiarea.activeSubWindow()
-        #print("mdi_controller.py sub_windows:{0} / active_sub = {1}".format(sub_windows,active_sub))
-        if active_sub:
-            index = sub_windows.index(active_sub)
-            #print("mdi_controller.py _update_current_document index = {0}".format(index))
+        if active_doc:
+            index = self._mdiarea.subWindowList().index(active_doc)
             pub.publish('program.set_active_document', index=index)
             return
 
