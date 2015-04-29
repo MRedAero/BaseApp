@@ -38,6 +38,11 @@ class BaseAppViewController(object):
         self._view.action_file_settings.triggered.connect(self._file_settings)
         self._view.action_file_exit.triggered.connect(self._file_exit)
 
+        self._view.action_window_htile.triggered.connect(self._window_horz_tile)
+        self._view.action_window_vtile.triggered.connect(self._window_vert_tile)
+        self._view.action_window_cascade.triggered.connect(self._window_cascade)
+
+
     def show(self):
         self._view.show()
 
@@ -98,3 +103,49 @@ class BaseAppViewController(object):
 
     def remove_dock_widget(self, dock_widget):
         self._view.removeDockWidget(dock_widget)
+
+    def _window_horz_tile(self):
+
+        # todo:  investigate: an mdiarea attribute is adjusted on cascadeSubWindows and tileSubWindows
+        #   currently execute cascadeSubWindows first before custom tiling ... if not, I miss some mdiarea attribute and doesn't display properly
+        self._mdi_controller._mdiarea.cascadeSubWindows()
+
+        position = QtCore.QPoint(0,0)
+        for wdw in self._mdi_controller._mdiarea.subWindowList():
+            tab_height = self._mdi_controller._mdiarea.findChild(QtGui.QTabBar).height()
+            new_width = self._mdi_controller._mdiarea.size().width() / (len(self._mdi_controller._mdiarea.subWindowList()))
+            new_height = self._mdi_controller._mdiarea.size().height() - tab_height
+
+            # Note:  setGeometry does not override wdw Minimum Size.... have to reset Minimum Size
+            wdw.setMinimumSize(0,0)
+            rect = QtCore.QRect(0,0,new_width,new_height)
+            wdw.setGeometry(rect)
+            wdw.move(position)
+            position.setX(position.x() + wdw.width())
+
+    def _window_vert_tile(self):
+
+        # todo:  investigate: some mdiarea attribute is adjusted on cascadeSubWindows and tileSubWindows
+        #   currently execute cascadeSubWindows first before custom tiling ... if not, I miss some mdiarea attribute and doesn't display properly
+        self._mdi_controller._mdiarea.cascadeSubWindows()
+
+        position = QtCore.QPoint(0,0)
+        for wdw in self._mdi_controller._mdiarea.subWindowList():
+            tab_height = self._mdi_controller._mdiarea.findChild(QtGui.QTabBar).height()
+            new_width = self._mdi_controller._mdiarea.size().width()
+            new_height = (self._mdi_controller._mdiarea.size().height()-tab_height) / (len(self._mdi_controller._mdiarea.subWindowList()))
+
+            # Note:  setGeometry does not override wdw Minimum Size.... have to reset Minimum Size
+            wdw.setMinimumSize(0,0)
+            rect = QtCore.QRect(0,0,new_width,new_height)
+            wdw.setGeometry(rect)
+            wdw.move(position)
+            position.setY(position.y() + wdw.height())
+
+    def _window_cascade(self):
+        w_min = self._mdi_controller._mdiarea.size().width() * 0.6
+        h_min = self._mdi_controller._mdiarea.size().height() * 0.6
+
+        for wdw in self._mdi_controller._mdiarea.subWindowList():
+            wdw.setMinimumSize(w_min,h_min)
+        self._mdi_controller._mdiarea.cascadeSubWindows()

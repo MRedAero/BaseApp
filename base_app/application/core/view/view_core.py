@@ -51,6 +51,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self._build_file_menu()
         self._build_edit_menu()
         self._build_tool_menu()
+        self._build_window_menu()
         self._build_help_menu()
 
         self.menu_controller.reorganize()
@@ -87,6 +88,18 @@ class BaseAppViewCore(QtGui.QMainWindow):
 
         self.tool_menu = self.menu_controller.add_menu('Tools')
         """:type: QtGui.QMenu"""
+
+    def _build_window_menu(self):
+
+        self.window_menu = self.menu_controller.add_menu('Window')
+        """:type: QtGui.QMenu"""
+        self.action_window_htile = self.window_menu.add_action('Tile Horizontally').get_action()
+        """:type: QtGui.QAction"""
+        self.action_window_vtile = self.window_menu.add_action('Tile Vertically').get_action()
+        """:type: QtGui.QAction"""
+        self.action_window_cascade = self.window_menu.add_action('Cascade').get_action()
+        """:type: QtGui.QAction"""
+
 
     def _build_help_menu(self):
 
