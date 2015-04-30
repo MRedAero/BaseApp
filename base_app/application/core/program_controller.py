@@ -28,8 +28,6 @@ class BaseAppProgramController(object):
         pub.subscribe(self.close_file, 'program.close_file')
         pub.subscribe(self.settings, 'program.settings')
 
-        self.new_file()
-
     def create_model_controller_object(self):
         return BaseAppModelController()
 
@@ -47,7 +45,6 @@ class BaseAppProgramController(object):
 
     def new_file(self):
         name = new_name(self._model_controller.get_model_names())
-
         pub.publish("view.new_view", name=name)
         pub.publish("model.new_model", name=name)
 

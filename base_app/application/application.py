@@ -35,8 +35,13 @@ class BaseApplication(object):
     def create_program_controller_object(self):
         return BaseAppProgramController
 
-    def show(self):
+    def show(self, blank_app=False):
         self._program_controller.show_view()
+
+        if not blank_app:
+            view = self._program_controller.get_view_controller().get_active_view()
+            if view is None:
+                self._program_controller.new_file()
 
     def start(self):
         sys.exit(self._app.exec_())

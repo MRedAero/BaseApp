@@ -28,22 +28,23 @@ class MDIController(object):
         ###  Issue with this signal...  Migrate to add signal: aboutToActivate to the subwindow when created
         #self._mdiarea.subWindowActivated.connect(self._update_current_document)
 
-        self._current_index = -1
-        self._active_document = None
         self._skip = 0
 
         self._subscribe_to_pub()
-
-    def get_current_index(self):
-        return self._current_index
-
-    def get_active_document(self):
-        return self._active_document
 
     def _subscribe_to_pub(self):
         pub.subscribe(self._set_active_document, "view.set_active_view")
         pub.subscribe(self._close_document, "view.close_view")
         pub.subscribe(self._new_document, "view.new_view")
+
+    def get_current_index(self):
+        try:
+            self._mdiarea.subWindowList().index(self.get_active_document())
+        except IndexError:
+            return -1
+
+    def get_active_document(self):
+        return self._mdiarea.activeSubWindow()
 
     def _new_document(self, name):
         self._skip = 1
@@ -69,23 +70,18 @@ class MDIController(object):
         new_subwindow.showMaximized()
         new_subwindow.show()
 
-        self._current_index = len(self._mdiarea.subWindowList()) - 1
-        self._active_document = self._mdiarea.subWindowList()[-1]
+        self._mdiarea.setActiveSubWindow(new_subwindow)
 
         return True
 
     def _close_document(self, index):
         if not self._mdiarea.subWindowList():
             return
-
         self._mdiarea.removeSubWindow(self._mdiarea.subWindowList()[index])
 
-        if not self._mdiarea.subWindowList():
-            self._active_document = None
-
     def _set_active_document(self, index):
-        self._current_index = index
-        self._active_document = self._mdiarea.subWindowList()[index]
+        subwindow = self._mdiarea.subWindowList()[index]
+        self._mdiarea.setActiveSubWindow(subwindow)
 
     def _update_current_document(self, active_doc):
         if self._skip:
@@ -95,7 +91,7 @@ class MDIController(object):
         if not active_doc:
             return
 
-        if self._current_index == -1:
+        if self.get_current_index() == -1:
             pub.publish('program.new_file')
             return
 
@@ -188,6 +184,11 @@ class SubWindow(QtGui.QMdiSubWindow):
             super(SubWindow, self).closeEvent(event)
             return
 
+        self.clear_layout()
+
+        layout = self.layout()
+        """:type: PyQt4.QtGui.QGridLayout.QGridLayout"""
+
         pub.publish('program.close_file', index=index)
 
         active_doc = self.get_active_document()
@@ -197,6 +198,18 @@ class SubWindow(QtGui.QMdiSubWindow):
             active_doc.showMaximized()
 
         super(SubWindow, self).closeEvent(event)
+
+    def clear_layout(self):
+        layout = self.layout()
+
+        while True:
+            child = layout.takeAt(0)
+            if not child:
+                break
+            widget = child.widget()
+            layout.removeWidget(widget)
+            del child
+
 
 
 
