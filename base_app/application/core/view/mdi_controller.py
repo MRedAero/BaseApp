@@ -30,7 +30,11 @@ class MDIController(object):
 
         self._skip = 0
 
+        self._window_mode = "maximized"
+        self._show_tabs = True
+
         self._subscribe_to_pub()
+
 
     def _subscribe_to_pub(self):
         pub.subscribe(self._set_active_document, "view.set_active_view")
@@ -80,6 +84,16 @@ class MDIController(object):
         self._mdiarea.removeSubWindow(self._mdiarea.subWindowList()[index])
         self._skip = 0
 
+        # This maintains the state on window close.. default QT behavior on close is to show tiled, but un-organized
+        if self._window_mode == "maximized":
+            self._mdiarea.activeSubWindow().showMaximized()
+        elif self._window_mode == "horizontal_tile":
+            self.tile_windows_horizontally(self._show_tabs)
+        elif self._window_mode == "vertical_tile":
+            self.tile_windows_vertically(self._show_tabs)
+        elif self._window_mode == "cascade":
+            self.cascade_windows()
+
     def _set_active_document(self, index):
         subwindow = self._mdiarea.subWindowList()[index]
         self._skip = 1
@@ -111,7 +125,9 @@ class MDIController(object):
         subwindow.showMaximized()
         self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
 
-    def tile_windows_horizontally(self):
+    def tile_windows_horizontally(self, show_tabs = True):
+        self._window_mode = "horizontal_tile"
+
         # todo:  investigate: an mdiarea attribute is adjusted on cascadeSubWindows and tileSubWindows
         # currently execute cascadeSubWindows first before custom tiling ...
         # if not, I miss some mdiarea attribute and doesn't display properly
@@ -119,7 +135,10 @@ class MDIController(object):
 
         position = QtCore.QPoint(0, 0)
         for subwindow in self._mdiarea.subWindowList():
-            tab_height = self._mdiarea.findChild(QtGui.QTabBar).height()
+            if show_tabs == True:
+                tab_height = self._mdiarea.findChild(QtGui.QTabBar).height()
+            else:
+                tab_height = 0
             new_width = self._mdiarea.size().width() / (len(self._mdiarea.subWindowList()))
             new_height = self._mdiarea.size().height() - tab_height
 
@@ -130,7 +149,9 @@ class MDIController(object):
             subwindow.move(position)
             position.setX(position.x() + subwindow.width())
 
-    def tile_windows_vertically(self):
+    def tile_windows_vertically(self, show_tabs=True):
+        self._window_mode = "vertical_tile"
+
         # todo:  investigate: some mdiarea attribute is adjusted on cascadeSubWindows and tileSubWindows
         # currently execute cascadeSubWindows first before custom tiling ...
         # if not, I miss some mdiarea attribute and doesn't display properly
@@ -138,7 +159,10 @@ class MDIController(object):
 
         position = QtCore.QPoint(0, 0)
         for subwindow in self._mdiarea.subWindowList():
-            tab_height = self._mdiarea.findChild(QtGui.QTabBar).height()
+            if show_tabs == True:
+                tab_height = self._mdiarea.findChild(QtGui.QTabBar).height()
+            else:
+                tab_height = 0
             new_width = self._mdiarea.size().width()
             new_height = (self._mdiarea.size().height() - tab_height) / (len(self._mdiarea.subWindowList()))
 
@@ -150,12 +174,26 @@ class MDIController(object):
             position.setY(position.y() + subwindow.height())
 
     def cascade_windows(self):
+        self._window_mode = "cascade"
+
         w_min = self._mdiarea.size().width() * 0.6
         h_min = self._mdiarea.size().height() * 0.6
 
         for subwindow in self._mdiarea.subWindowList():
             subwindow.setMinimumSize(w_min, h_min)
         self._mdiarea.cascadeSubWindows()
+
+    def show_window_tabs(self, show_tabs=True):
+        self._show_tabs = show_tabs
+
+        if show_tabs == True:
+            self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
+            # Have to find the QTabBar again.....
+            self._mdiarea.findChild(QtGui.QTabBar).setExpanding(False)
+        elif show_tabs == False:
+            self._mdiarea.setViewMode(QtGui.QMdiArea.SubWindowView)
+            self.cascade_windows()
+
 
 
 class MdiArea(QtGui.QMdiArea):

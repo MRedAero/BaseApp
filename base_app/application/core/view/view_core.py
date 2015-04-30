@@ -93,12 +93,30 @@ class BaseAppViewCore(QtGui.QMainWindow):
 
         self.window_menu = self.menu_controller.add_menu('Window')
         """:type: QtGui.QMenu"""
+        self.action_window_new = self.window_menu.add_action('New Window...').get_action()
+        """:type: QtGui.QAction"""
+        self.action_window_close = self.window_menu.add_action('Close Window').get_action()
+        """:type: QtGui.QAction"""
+
+        # why are the separators named?
+        self.window_menu.add_separator('1')
         self.action_window_htile = self.window_menu.add_action('Tile Horizontally').get_action()
         """:type: QtGui.QAction"""
         self.action_window_vtile = self.window_menu.add_action('Tile Vertically').get_action()
         """:type: QtGui.QAction"""
         self.action_window_cascade = self.window_menu.add_action('Cascade').get_action()
         """:type: QtGui.QAction"""
+
+        # why are the separators named?
+        self.window_menu.add_separator('2')
+        self.action_window_showtabs = self.window_menu.add_action('Show Tabs').get_action()
+        """:type: QtGui.QAction"""
+        self.action_window_showtabs.setCheckable(True)
+        self.action_window_showtabs.setChecked(True)
+
+        # why are the separators named?
+        self.window_menu.add_separator('3')
+
 
 
     def _build_help_menu(self):

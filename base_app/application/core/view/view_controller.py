@@ -41,9 +41,12 @@ class BaseAppViewController(object):
         self._view.action_file_settings.triggered.connect(self._file_settings)
         self._view.action_file_exit.triggered.connect(self._file_exit)
 
+        self._view.action_window_new.triggered.connect(self._file_new)
+        self._view.action_window_close.triggered.connect(self._file_close)
         self._view.action_window_htile.triggered.connect(self._tile_windows_horizontally)
         self._view.action_window_vtile.triggered.connect(self._tile_windows_vertically)
         self._view.action_window_cascade.triggered.connect(self._cascade_windows)
+        self._view.action_window_showtabs.triggered.connect(self._show_window_tabs)
 
     def show(self):
         self._view.show()
@@ -101,10 +104,13 @@ class BaseAppViewController(object):
         self._view.removeDockWidget(dock_widget)
 
     def _tile_windows_horizontally(self):
-        self._mdi_controller.tile_windows_horizontally()
+        self._mdi_controller.tile_windows_horizontally(self._view.action_window_showtabs.isChecked())
 
     def _tile_windows_vertically(self):
-        self._mdi_controller.tile_windows_vertically()
+        self._mdi_controller.tile_windows_vertically(self._view.action_window_showtabs.isChecked())
 
     def _cascade_windows(self):
         self._mdi_controller.cascade_windows()
+
+    def _show_window_tabs(self):
+        self._mdi_controller.show_window_tabs(self._view.action_window_showtabs.isChecked())
