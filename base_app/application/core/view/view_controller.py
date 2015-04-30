@@ -52,7 +52,10 @@ class BaseAppViewController(object):
         pub.publish('program.new_file')
 
     def _file_close(self):
-        pub.publish('program.close_file', self._mdi_controller.get_current_index())
+        index = self._mdi_controller.get_current_index()
+        if index < 0:
+            return
+        pub.publish('program.close_file', index)
 
     def get_active_view(self):
         return self._mdi_controller.get_active_document()

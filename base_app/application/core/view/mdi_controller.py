@@ -39,21 +39,20 @@ class MDIController(object):
 
     def get_current_index(self):
         try:
-            self._mdiarea.subWindowList().index(self.get_active_document())
-        except IndexError:
+            return self._mdiarea.subWindowList().index(self.get_active_document())
+        except (IndexError, ValueError):
             return -1
 
     def get_active_document(self):
         return self._mdiarea.activeSubWindow()
 
     def _new_document(self, name):
-        self._skip = 1
-
         # Sub Class
         new_subwindow = SubWindow(self._mdiarea.subWindowList, self.get_active_document)
         #new_subwindow = QtGui.QMdiSubWindow()
         new_subwindow.setWindowTitle(name)
         # new_subwindow.maximized.connect(lambda: self.set_tab_view(new_subwindow))
+        self._skip = 1
         self._mdiarea.addSubWindow(new_subwindow)
 
         # Define minimum size...
@@ -77,13 +76,21 @@ class MDIController(object):
     def _close_document(self, index):
         if not self._mdiarea.subWindowList():
             return
+        self._skip = 1
         self._mdiarea.removeSubWindow(self._mdiarea.subWindowList()[index])
+        self._skip = 0
 
     def _set_active_document(self, index):
         subwindow = self._mdiarea.subWindowList()[index]
+        self._skip = 1
         self._mdiarea.setActiveSubWindow(subwindow)
+        self._skip = 0
+
+        print "%d = %d" % (index, self.get_current_index())
 
     def _update_current_document(self, active_doc):
+        # this should only be used when the user clicks on a new subwindow, any other time it should be skipped
+        # and handled by the program controller
         if self._skip:
             self._skip -= 1
             return
@@ -185,9 +192,6 @@ class SubWindow(QtGui.QMdiSubWindow):
             return
 
         self.clear_layout()
-
-        layout = self.layout()
-        """:type: PyQt4.QtGui.QGridLayout.QGridLayout"""
 
         pub.publish('program.close_file', index=index)
 

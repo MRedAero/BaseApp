@@ -48,6 +48,9 @@ class BaseAppProgramController(object):
         pub.publish("view.new_view", name=name)
         pub.publish("model.new_model", name=name)
 
+        index = self.get_model_controller().get_model_names().index(name)
+        self.set_active_document(index)
+
     def set_active_document(self, index):
         pub.publish("view.set_active_view", index=index)
         pub.publish("model.set_active_model", index=index)
@@ -62,6 +65,16 @@ class BaseAppProgramController(object):
     def close_file(self, index):
         pub.publish("view.close_view", index=index)
         pub.publish("model.close_model", index=index)
+
+        last_index = len(self._model_controller.get_model_names()) - 1
+
+        if index > last_index:
+            index -= 1
+
+        if index < 0:
+            return
+
+        self.set_active_document(index)
 
     def get_view_controller(self):
         return self._view_controller
