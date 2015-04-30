@@ -20,13 +20,16 @@ class BaseAppViewController(object):
         self._mdi_controller = MDIController(self._view)
 
         self._connect_signals()
+        self._subscribe_to_pub()
 
     def get_view(self):
         return self._view
 
-    @property
     def create_view_object(self):
-        return BaseAppViewCore
+        return BaseAppViewCore()
+
+    def _subscribe_to_pub(self):
+        pub.subscribe(self._set_file, "view.set_file")
 
     def _connect_signals(self):
         self._view.action_file_new.triggered.connect(self._file_new)
@@ -38,10 +41,9 @@ class BaseAppViewController(object):
         self._view.action_file_settings.triggered.connect(self._file_settings)
         self._view.action_file_exit.triggered.connect(self._file_exit)
 
-        self._view.action_window_htile.triggered.connect(self._window_horz_tile)
-        self._view.action_window_vtile.triggered.connect(self._window_vert_tile)
-        self._view.action_window_cascade.triggered.connect(self._window_cascade)
-
+        self._view.action_window_htile.triggered.connect(self._tile_windows_horizontally)
+        self._view.action_window_vtile.triggered.connect(self._tile_windows_vertically)
+        self._view.action_window_cascade.triggered.connect(self._cascade_windows)
 
     def show(self):
         self._view.show()
@@ -51,15 +53,6 @@ class BaseAppViewController(object):
 
     def _file_close(self):
         pub.publish('program.close_file', self._mdi_controller.get_current_index())
-
-    def new_view(self, name):
-        self._mdi_controller.add_document(name)
-
-    def close_view(self, index):
-        self._mdi_controller.close_document(index)
-
-    def set_active_view(self, index):
-        self._mdi_controller.set_active_document(index)
 
     def get_active_view(self):
         return self._mdi_controller.get_active_document()
@@ -83,7 +76,7 @@ class BaseAppViewController(object):
         finally:
             self._app.restoreOverrideCursor()
 
-    def set_file(self, file):
+    def _set_file(self, file_):
         pass
 
     def _file_save(self):
@@ -104,48 +97,11 @@ class BaseAppViewController(object):
     def remove_dock_widget(self, dock_widget):
         self._view.removeDockWidget(dock_widget)
 
-    def _window_horz_tile(self):
+    def _tile_windows_horizontally(self):
+        self._mdi_controller.tile_windows_horizontally()
 
-        # todo:  investigate: an mdiarea attribute is adjusted on cascadeSubWindows and tileSubWindows
-        #   currently execute cascadeSubWindows first before custom tiling ... if not, I miss some mdiarea attribute and doesn't display properly
-        self._mdi_controller._mdiarea.cascadeSubWindows()
+    def _tile_windows_vertically(self):
+        self._mdi_controller.tile_windows_vertically()
 
-        position = QtCore.QPoint(0,0)
-        for wdw in self._mdi_controller._mdiarea.subWindowList():
-            tab_height = self._mdi_controller._mdiarea.findChild(QtGui.QTabBar).height()
-            new_width = self._mdi_controller._mdiarea.size().width() / (len(self._mdi_controller._mdiarea.subWindowList()))
-            new_height = self._mdi_controller._mdiarea.size().height() - tab_height
-
-            # Note:  setGeometry does not override wdw Minimum Size.... have to reset Minimum Size
-            wdw.setMinimumSize(0,0)
-            rect = QtCore.QRect(0,0,new_width,new_height)
-            wdw.setGeometry(rect)
-            wdw.move(position)
-            position.setX(position.x() + wdw.width())
-
-    def _window_vert_tile(self):
-
-        # todo:  investigate: some mdiarea attribute is adjusted on cascadeSubWindows and tileSubWindows
-        #   currently execute cascadeSubWindows first before custom tiling ... if not, I miss some mdiarea attribute and doesn't display properly
-        self._mdi_controller._mdiarea.cascadeSubWindows()
-
-        position = QtCore.QPoint(0,0)
-        for wdw in self._mdi_controller._mdiarea.subWindowList():
-            tab_height = self._mdi_controller._mdiarea.findChild(QtGui.QTabBar).height()
-            new_width = self._mdi_controller._mdiarea.size().width()
-            new_height = (self._mdi_controller._mdiarea.size().height()-tab_height) / (len(self._mdi_controller._mdiarea.subWindowList()))
-
-            # Note:  setGeometry does not override wdw Minimum Size.... have to reset Minimum Size
-            wdw.setMinimumSize(0,0)
-            rect = QtCore.QRect(0,0,new_width,new_height)
-            wdw.setGeometry(rect)
-            wdw.move(position)
-            position.setY(position.y() + wdw.height())
-
-    def _window_cascade(self):
-        w_min = self._mdi_controller._mdiarea.size().width() * 0.6
-        h_min = self._mdi_controller._mdiarea.size().height() * 0.6
-
-        for wdw in self._mdi_controller._mdiarea.subWindowList():
-            wdw.setMinimumSize(w_min,h_min)
-        self._mdi_controller._mdiarea.cascadeSubWindows()
+    def _cascade_windows(self):
+        self._mdi_controller.cascade_windows()

@@ -48,23 +48,23 @@ class BaseAppProgramController(object):
     def new_file(self):
         name = new_name(self._model_controller.get_model_names())
 
-        self._view_controller.new_view(name)
-        self._model_controller.new_model(name)
+        pub.publish("view.new_view", name=name)
+        pub.publish("model.new_model", name=name)
 
     def set_active_document(self, index):
-        self._view_controller.set_active_view(index)
-        self._model_controller.set_active_model(index)
+        pub.publish("view.set_active_view", index=index)
+        pub.publish("model.set_active_model", index=index)
 
     def open_file(self, filename):
-        file = file_utilities.open_file(filename)
+        file_ = file_utilities.open_file(filename)
 
-        if file:
-            self._model_controller.set_file(file)
-            self._view_controller.set_file(file)
+        if file_:
+            pub.publish("view.set_file", file_=file_)
+            pub.publish("model.set_file", file_=file_)
 
     def close_file(self, index):
-        self._view_controller.close_view(index)
-        self._model_controller.close_model(index)
+        pub.publish("view.close_view", index=index)
+        pub.publish("model.close_model", index=index)
 
     def get_view_controller(self):
         return self._view_controller
