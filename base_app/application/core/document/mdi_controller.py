@@ -4,42 +4,47 @@ from PyQt4 import QtGui, QtCore
 
 from base_app.simple_pubsub import pub
 
+from mdi_subwindow import MdiSubWindow
+
 
 class MDIController(object):
     def __init__(self, view):
         self._view = view
         """:type: base_app.application.core.view.view_core.BaseAppViewCore"""
 
-        # MDI
-        self._mdiarea = MdiArea(self._view.central_widget)
-        # self._mdiarea = QtGui.QMdiArea(self._view.central_widget)
-        #self._mdiarea.setDocumentMode(True)
+        self._mdiarea = QtGui.QMdiArea(self._view.central_widget)
         self._mdiarea.setTabsClosable(True)
         self._mdiarea.setTabsMovable(True)
         self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
-        #self._mdiarea.setViewMode(QtGui.QMdiArea.SubWindowView)
         self._mdiarea_tabbar = self._mdiarea.findChild(QtGui.QTabBar)
         self._mdiarea_tabbar.setExpanding(False)
 
-        self._mdiarea.subWindowActivated.connect(self._update_current_document)
+        #self._mdiarea.subWindowActivated.connect(self._update_current_document)
 
         self._view.grid_layout.addWidget(self._mdiarea, 0, 0, 1, 1)
 
         ###  Issue with this signal...  Migrate to add signal: aboutToActivate to the subwindow when created
-        #self._mdiarea.subWindowActivated.connect(self._update_current_document)
-
-        self._skip = 0
+        self._mdiarea.subWindowActivated.connect(self._subwindow_activated)
 
         self._window_mode = "maximized"
         self._show_tabs = True
 
         self._subscribe_to_pub()
 
-
     def _subscribe_to_pub(self):
-        pub.subscribe(self._set_active_document, "view.set_active_view")
-        pub.subscribe(self._close_document, "view.close_view")
-        pub.subscribe(self._new_document, "view.new_view")
+        pub.subscribe(self.tile_windows_horizontally, "mdi.tile_windows_horizontally")
+        pub.subscribe(self.tile_windows_vertically, "mdi.tile_windows_vertically")
+        pub.subscribe(self.cascade_windows, "mdi.cascade_windows")
+        pub.subscribe(self.set_tab_view, "mdi.set_tab_view")
+
+    def get_mdi_area(self):
+        return self._mdiarea
+
+    def get_subwindow_index(self, subwindow):
+        try:
+            return self._mdiarea.subWindowList().index(subwindow)
+        except (IndexError, ValueError):
+            return -1
 
     def get_current_index(self):
         try:
@@ -50,14 +55,13 @@ class MDIController(object):
     def get_active_document(self):
         return self._mdiarea.activeSubWindow()
 
-    def _new_document(self, name):
+    def add_subwindow(self, subwindow):
         # Sub Class
-        new_subwindow = SubWindow(self._mdiarea.subWindowList, self.get_active_document)
+        #new_subwindow = MdiSubWindow(self)
         #new_subwindow = QtGui.QMdiSubWindow()
-        new_subwindow.setWindowTitle(name)
+        #new_subwindow.setWindowTitle(name)
         # new_subwindow.maximized.connect(lambda: self.set_tab_view(new_subwindow))
-        self._skip = 1
-        self._mdiarea.addSubWindow(new_subwindow)
+        self._mdiarea.addSubWindow(subwindow)
 
         # Define minimum size...
         golden_ratio = 1.618
@@ -66,23 +70,21 @@ class MDIController(object):
         else:
             minwidth = 100.
 
-        new_subwindow.setMinimumSize(minwidth, minwidth / golden_ratio)
+        subwindow.setMinimumSize(minwidth, minwidth / golden_ratio)
         #new_subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        new_subwindow.setOption(QtGui.QMdiSubWindow.RubberBandResize)
-        new_subwindow.setOption(QtGui.QMdiSubWindow.RubberBandMove)
-        new_subwindow.showMaximized()
-        new_subwindow.show()
+        subwindow.setOption(QtGui.QMdiSubWindow.RubberBandResize)
+        subwindow.setOption(QtGui.QMdiSubWindow.RubberBandMove)
+        subwindow.showMaximized()
+        subwindow.show()
 
-        self._mdiarea.setActiveSubWindow(new_subwindow)
+        # I don't think this is needed
+        #self._mdiarea.setActiveSubWindow(subwindow)
 
-        return True
-
-    def _close_document(self, index):
-        if not self._mdiarea.subWindowList():
+    def remove_subwindow(self, subwindow):
+        if subwindow not in self._mdiarea.subWindowList():
             return
-        self._skip = 1
-        self._mdiarea.removeSubWindow(self._mdiarea.subWindowList()[index])
-        self._skip = 0
+
+        self._mdiarea.removeSubWindow(subwindow)
 
         # This maintains the state on window close.. default QT behavior on close is to show tiled, but un-organized
         if self._window_mode == "maximized":
@@ -94,6 +96,11 @@ class MDIController(object):
         elif self._window_mode == "cascade":
             self.cascade_windows()
 
+    def _subwindow_activated(self, subwindow):
+        index = self.get_subwindow_index(subwindow)
+        print 'subwindow activated = %d' % index
+        pub.publish("program.set_active_document", index=index)
+
     def _set_active_document(self, index):
         subwindow = self._mdiarea.subWindowList()[index]
         self._skip = 1
@@ -101,25 +108,6 @@ class MDIController(object):
         self._skip = 0
 
         print "%d = %d" % (index, self.get_current_index())
-
-    def _update_current_document(self, active_doc):
-        # this should only be used when the user clicks on a new subwindow, any other time it should be skipped
-        # and handled by the program controller
-        if self._skip:
-            self._skip -= 1
-            return
-
-        if not active_doc:
-            return
-
-        if self.get_current_index() == -1:
-            pub.publish('program.new_file')
-            return
-
-        if active_doc:
-            index = self._mdiarea.subWindowList().index(active_doc)
-            pub.publish('program.set_active_document', index=index)
-            return
 
     def set_tab_view(self, subwindow):
         subwindow.showMaximized()
@@ -189,68 +177,12 @@ class MDIController(object):
         if show_tabs == True:
             self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
             # Have to find the QTabBar again.....
+            # @ Nick: do you only need to find the tab bar once and then store it as an attribute?
             self._mdiarea.findChild(QtGui.QTabBar).setExpanding(False)
         elif show_tabs == False:
             self._mdiarea.setViewMode(QtGui.QMdiArea.SubWindowView)
             self.cascade_windows()
 
-
-
-class MdiArea(QtGui.QMdiArea):
-    def __init__(self, parent=None):
-        QtGui.QMdiArea.__init__(self)
-        pass
-
-        # def closeEvent(self):
-        # pass
-
-
-class SubWindow(QtGui.QMdiSubWindow):
-    def __init__(self, window_list_getter, active_document_getter):
-        super(SubWindow, self).__init__()
-
-        self._window_list_getter = window_list_getter
-        self._active_document_getter = active_document_getter
-
-    def get_index(self):
-        try:
-            return self._window_list_getter().index(self)
-        except IndexError:
-            return -1
-
-    def get_active_document(self):
-        return self._active_document_getter()
-
-    def closeEvent(self, event):
-        index = self.get_index()
-
-        if index < 0:
-            print 'this QMdiSubWindow is no longer part of the subWindowList'
-            super(SubWindow, self).closeEvent(event)
-            return
-
-        self.clear_layout()
-
-        pub.publish('program.close_file', index=index)
-
-        active_doc = self.get_active_document()
-
-        # @Nick: if cascading or tiling is on, that should be updated so there's no empty space in the mdi area
-        if self.isMaximized() and active_doc:
-            active_doc.showMaximized()
-
-        super(SubWindow, self).closeEvent(event)
-
-    def clear_layout(self):
-        layout = self.layout()
-
-        while True:
-            child = layout.takeAt(0)
-            if not child:
-                break
-            widget = child.widget()
-            layout.removeWidget(widget)
-            del child
 
 
 

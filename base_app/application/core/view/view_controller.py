@@ -4,7 +4,7 @@ from PyQt4 import QtCore, QtGui
 
 from base_app.simple_pubsub import pub
 from view_core import BaseAppViewCore
-from mdi_controller import MDIController
+from base_app.application.core.document.mdi_controller import MDIController
 
 
 class BaseAppViewController(object):
@@ -14,22 +14,16 @@ class BaseAppViewController(object):
         self._app = app
         """:type: base_app.application.BaseQApplication"""
 
-        self._view = self.create_view_object()
+        self._view = self.create_view()
         """:type: BaseAppViewCore"""
 
-        self._mdi_controller = MDIController(self._view)
-
         self._connect_signals()
-        self._subscribe_to_pub()
 
     def get_view(self):
         return self._view
 
-    def create_view_object(self):
+    def create_view(self):
         return BaseAppViewCore()
-
-    def _subscribe_to_pub(self):
-        pub.subscribe(self._set_file, "view.set_file")
 
     def _connect_signals(self):
         self._view.action_file_new.triggered.connect(self._file_new)
@@ -43,6 +37,8 @@ class BaseAppViewController(object):
 
         self._view.action_window_new.triggered.connect(self._file_new)
         self._view.action_window_close.triggered.connect(self._file_close)
+
+        # this stuff might be better in mdi_controller, since not all apps will have mdi area
         self._view.action_window_htile.triggered.connect(self._tile_windows_horizontally)
         self._view.action_window_vtile.triggered.connect(self._tile_windows_vertically)
         self._view.action_window_cascade.triggered.connect(self._cascade_windows)
@@ -55,13 +51,7 @@ class BaseAppViewController(object):
         pub.publish('program.new_file')
 
     def _file_close(self):
-        index = self._mdi_controller.get_current_index()
-        if index < 0:
-            return
-        pub.publish('program.close_file', index)
-
-    def get_active_view(self):
-        return self._mdi_controller.get_active_document()
+        pub.publish('program.close_file', index=None)
 
     def _file_open(self):
         # noinspection PyCallByClass
@@ -104,13 +94,13 @@ class BaseAppViewController(object):
         self._view.removeDockWidget(dock_widget)
 
     def _tile_windows_horizontally(self):
-        self._mdi_controller.tile_windows_horizontally(self._view.action_window_showtabs.isChecked())
+        pub.publish("mdi.tile_windows_horizontally", show_tabs=self._view.action_window_showtabs.isChecked())
 
     def _tile_windows_vertically(self):
-        self._mdi_controller.tile_windows_vertically(self._view.action_window_showtabs.isChecked())
+        pub.publish("mdi.tile_windows_vertically", show_tabs=self._view.action_window_showtabs.isChecked())
 
     def _cascade_windows(self):
-        self._mdi_controller.cascade_windows()
+        pub.publish("mdi.cascade_windows")
 
     def _show_window_tabs(self):
-        self._mdi_controller.show_window_tabs(self._view.action_window_showtabs.isChecked())
+        pub.publish("mdi.show_window_tabs", show_tabs=self._view.action_window_showtabs.isChecked())

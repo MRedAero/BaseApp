@@ -39,8 +39,8 @@ class BaseApplication(object):
         self._program_controller.show_view()
 
         if not blank_app:
-            view = self._program_controller.get_view_controller().get_active_view()
-            if view is None:
+            doc = self._program_controller.get_document_controller().get_active_document()
+            if doc is None:
                 self._program_controller.new_file()
 
     def start(self):
