@@ -163,7 +163,6 @@ class MDIController(object):
 
     def cascade_windows(self):
         self._window_mode = "cascade"
-
         w_min = self._mdiarea.size().width() * 0.6
         h_min = self._mdiarea.size().height() * 0.6
 
@@ -171,10 +170,10 @@ class MDIController(object):
             subwindow.setMinimumSize(w_min, h_min)
         self._mdiarea.cascadeSubWindows()
 
-    def show_window_tabs(self, show_tabs=True):
+    def set_tab_view(self, show_tabs=True):
         self._show_tabs = show_tabs
-
         if show_tabs == True:
+            print("true")
             self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
             # Have to find the QTabBar again.....
             # @ Nick: do you only need to find the tab bar once and then store it as an attribute?
