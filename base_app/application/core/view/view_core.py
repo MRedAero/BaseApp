@@ -109,10 +109,10 @@ class BaseAppViewCore(QtGui.QMainWindow):
 
         # why are the separators named?
         self.window_menu.add_separator('2')
-        self.action_window_tabview= self.window_menu.add_action('Show Tabs').get_action()
+        self.action_window_showtabs= self.window_menu.add_action('Show Tabs').get_action()
         """:type: QtGui.QAction"""
-        self.action_window_tabview.setCheckable(True)
-        self.action_window_tabview.setChecked(True)
+        self.action_window_showtabs.setCheckable(True)
+        self.action_window_showtabs.setChecked(True)
 
         # why are the separators named?
         self.window_menu.add_separator('3')

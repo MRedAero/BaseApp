@@ -42,7 +42,7 @@ class BaseAppViewController(object):
         self._view.action_window_htile.triggered.connect(self._tile_windows_horizontally)
         self._view.action_window_vtile.triggered.connect(self._tile_windows_vertically)
         self._view.action_window_cascade.triggered.connect(self._cascade_windows)
-        self._view.action_window_tabview.triggered.connect(self._set_tab_view)
+        self._view.action_window_showtabs.triggered.connect(self._show_window_tabs)
 
     def show(self):
         self._view.show()
@@ -94,13 +94,13 @@ class BaseAppViewController(object):
         self._view.removeDockWidget(dock_widget)
 
     def _tile_windows_horizontally(self):
-        pub.publish("mdi.tile_windows_horizontally", show_tabs=self._view.action_window_tabview.isChecked())
+        pub.publish("mdi.tile_windows_horizontally", show_tabs=self._view.action_window_showtabs.isChecked())
 
     def _tile_windows_vertically(self):
-        pub.publish("mdi.tile_windows_vertically", show_tabs=self._view.action_window_tabview.isChecked())
+        pub.publish("mdi.tile_windows_vertically", show_tabs=self._view.action_window_showtabs.isChecked())
 
     def _cascade_windows(self):
         pub.publish("mdi.cascade_windows")
 
-    def _set_tab_view(self):
-        pub.publish("mdi.set_tab_view", show_tabs=self._view.action_window_tabview.isChecked())
+    def _show_window_tabs(self):
+        pub.publish("mdi.show_window_tabs", show_tabs=self._view.action_window_showtabs.isChecked())
