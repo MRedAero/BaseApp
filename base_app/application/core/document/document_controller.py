@@ -91,7 +91,7 @@ class BaseAppDocumentController(object):
 
         doc = self._documents[index]
         del self._documents[index]
-        doc.unload()
+        doc.unload(index)
         doc = None
         gc.collect()
 

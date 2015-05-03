@@ -32,7 +32,8 @@ class BaseAppDocument(object):
     def set_file(self, file_):
         self._file = file_
 
-    def unload(self):
-        self._mdi_controller.remove_subwindow(self)
+    def unload(self, index):
+        #self._mdi_controller.remove_subwindow(self)
+        self._mdi_controller.remove_subwindow(index)
         self._subwindow.setParent(None)
         self._subwindow = None

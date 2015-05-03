@@ -29,6 +29,10 @@ class MDIController(object):
         self._window_mode = "maximized"
         self._show_tabs = True
 
+        # List of active subwindows in order of creation (append on add, remove on close)
+        # Allows windows/tabs to be moved and still retain their index
+        self._mdiarea_subwindows = []
+
         self._subscribe_to_pub()
 
     def _subscribe_to_pub(self):
@@ -43,13 +47,16 @@ class MDIController(object):
 
     def get_subwindow_index(self, subwindow):
         try:
-            return self._mdiarea.subWindowList().index(subwindow)
+            #return self._mdiarea.subWindowList().index(subwindow)
+            return self._mdiarea_subwindows.index(subwindow)
         except (IndexError, ValueError):
             return -1
 
     def get_current_index(self):
         try:
-            return self._mdiarea.subWindowList().index(self.get_active_document())
+            #return self._mdiarea.subWindowList().index(self.get_active_document())
+            return self._mdiarea_subwindows.index(self.get_active_document())
+
         except (IndexError, ValueError):
             return -1
 
@@ -63,6 +70,8 @@ class MDIController(object):
         #new_subwindow.setWindowTitle(name)
         # new_subwindow.maximized.connect(lambda: self.set_tab_view(new_subwindow))
         self._mdiarea.addSubWindow(subwindow)
+
+        self._mdiarea_subwindows.append(subwindow)
 
         # Define minimum size...
         golden_ratio = 1.618
@@ -81,15 +90,26 @@ class MDIController(object):
         # I don't think this is needed
         #self._mdiarea.setActiveSubWindow(subwindow)
 
-    def remove_subwindow(self, subwindow):
+    def remove_subwindow(self, index):
+        subwindow = self._mdiarea_subwindows[index]
+
         if subwindow not in self._mdiarea.subWindowList():
             return
 
-        self._mdiarea.removeSubWindow(subwindow)
+        # Do not need to .removeSubWindow
+        #self._mdiarea.removeSubWindow(subwindow)
+
+        # Remove it from our list though
+        self._mdiarea_subwindows.remove(subwindow)
 
         # This maintains the state on window close.. default QT behavior on close is to show tiled, but un-organized
         if self._window_mode == "maximized":
-            self._mdiarea.activeSubWindow().showMaximized()
+            if self._mdiarea.activeSubWindow():
+                self._mdiarea.activeSubWindow().showMaximized()
+            else:
+                if len(self._mdiarea_subwindows) > 0:
+                    self._mdiarea.setActiveSubWindow(self._mdiarea_subwindows[0])
+                    self._mdiarea.activeSubWindow().showMaximized()
         elif self._window_mode == "horizontal_tile":
             self.tile_windows_horizontally(self._show_tabs)
         elif self._window_mode == "vertical_tile":
@@ -99,11 +119,23 @@ class MDIController(object):
 
     def _subwindow_activated(self, subwindow):
         index = self.get_subwindow_index(subwindow)
-        print 'subwindow activated = %d' % index
+        #print 'subwindow activated = %d' % index
+        if subwindow in self._mdiarea.subWindowList():
+            print('subwindow activated: index = {0} : title = {1}'.format(index, subwindow.windowTitle()))
+        else:
+            print('subwindow activated: index = {0}'.format(index))
+
         pub.publish("program.set_active_document", index=index)
 
     def _set_active_document(self, index):
-        subwindow = self._mdiarea.subWindowList()[index]
+
+        #ubwindow = self._mdiarea.subWindowList()[index]
+
+        if self._mdiarea_subwindows[index] in self._mdiarea.subWindowList():
+            subwindow = self._mdiarea_subwindows[index]
+        else:
+            subwindow = self._mdiarea.subWindowList()[0]
+
         self._skip = 1
         self._mdiarea.setActiveSubWindow(subwindow)
         self._skip = 0
