@@ -22,6 +22,9 @@ class BaseAppProgramController(object):
         self._plugin_controller = self.create_plugin_controller()
         self._settings_controller = self.create_settings_controller(self._plugin_controller)
 
+        self._subscribe_to_pub()
+
+    def _subscribe_to_pub(self):
         pub.subscribe(self.new_file, 'program.new_file')
         pub.subscribe(self.set_active_document, 'program.set_active_document')
         pub.subscribe(self.open_file, 'program.open_file')

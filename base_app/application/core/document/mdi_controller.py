@@ -40,7 +40,7 @@ class MDIController(object):
         pub.subscribe(self.tile_windows_vertically, "mdi.tile_windows_vertically")
         pub.subscribe(self.cascade_windows, "mdi.cascade_windows")
         pub.subscribe(self.set_tab_view, "mdi.set_tab_view")
-        pub.subscribe(self.set_tab_view, "mdi.show_window_tabs")
+        pub.subscribe(self.show_window_tabs, "mdi.show_window_tabs")
 
     def get_mdi_area(self):
         return self._mdiarea

@@ -16,7 +16,7 @@ class BaseAppDocument(object):
         self._subwindow = MdiSubWindow(document_name, self._mdi_controller)
         self._subwindow.setWindowTitle(self._document_name)
 
-        self._model = BaseAppModelCore(self._document_name)
+        self._model = self._create_model(document_name)
 
         self._file = None
 
@@ -37,3 +37,6 @@ class BaseAppDocument(object):
         self._mdi_controller.remove_subwindow(index)
         self._subwindow.setParent(None)
         self._subwindow = None
+
+    def _create_model(self, document_name):
+        return BaseAppModelCore(document_name)
