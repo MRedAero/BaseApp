@@ -4,7 +4,7 @@ from PyQt4 import QtCore, QtGui
 
 from base_app.simple_pubsub import pub
 from view_core import BaseAppViewCore
-from mdi_controller import MDIController
+from base_app.application.core.document.mdi_controller import MDIController
 
 
 class BaseAppViewController(object):
@@ -14,19 +14,16 @@ class BaseAppViewController(object):
         self._app = app
         """:type: base_app.application.BaseQApplication"""
 
-        self._view = self.create_view_object()
+        self._view = self.create_view()
         """:type: BaseAppViewCore"""
-
-        self._mdi_controller = MDIController(self._view)
 
         self._connect_signals()
 
     def get_view(self):
         return self._view
 
-    @property
-    def create_view_object(self):
-        return BaseAppViewCore
+    def create_view(self):
+        return BaseAppViewCore()
 
     def _connect_signals(self):
         self._view.action_file_new.triggered.connect(self._file_new)
@@ -38,6 +35,15 @@ class BaseAppViewController(object):
         self._view.action_file_settings.triggered.connect(self._file_settings)
         self._view.action_file_exit.triggered.connect(self._file_exit)
 
+        self._view.action_window_new.triggered.connect(self._file_new)
+        self._view.action_window_close.triggered.connect(self._file_close)
+
+        # this stuff might be better in mdi_controller, since not all apps will have mdi area
+        self._view.action_window_htile.triggered.connect(self._tile_windows_horizontally)
+        self._view.action_window_vtile.triggered.connect(self._tile_windows_vertically)
+        self._view.action_window_cascade.triggered.connect(self._cascade_windows)
+        self._view.action_window_showtabs.triggered.connect(self._show_window_tabs)
+
     def show(self):
         self._view.show()
 
@@ -45,19 +51,7 @@ class BaseAppViewController(object):
         pub.publish('program.new_file')
 
     def _file_close(self):
-        pub.publish('program.close_file', self._mdi_controller.get_current_index())
-
-    def new_view(self, name):
-        self._mdi_controller.add_document(name)
-
-    def close_view(self, index):
-        self._mdi_controller.close_document(index)
-
-    def set_active_view(self, index):
-        self._mdi_controller.set_active_document(index)
-
-    def get_active_view(self):
-        return self._mdi_controller.get_active_document()
+        pub.publish('program.close_file', index=None)
 
     def _file_open(self):
         # noinspection PyCallByClass
@@ -78,7 +72,7 @@ class BaseAppViewController(object):
         finally:
             self._app.restoreOverrideCursor()
 
-    def set_file(self, file):
+    def _set_file(self, file_):
         pass
 
     def _file_save(self):
@@ -98,3 +92,15 @@ class BaseAppViewController(object):
 
     def remove_dock_widget(self, dock_widget):
         self._view.removeDockWidget(dock_widget)
+
+    def _tile_windows_horizontally(self):
+        pub.publish("mdi.tile_windows_horizontally", show_tabs=self._view.action_window_showtabs.isChecked())
+
+    def _tile_windows_vertically(self):
+        pub.publish("mdi.tile_windows_vertically", show_tabs=self._view.action_window_showtabs.isChecked())
+
+    def _cascade_windows(self):
+        pub.publish("mdi.cascade_windows")
+
+    def _show_window_tabs(self):
+        pub.publish("mdi.show_window_tabs", show_tabs=self._view.action_window_showtabs.isChecked())
