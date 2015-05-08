@@ -125,10 +125,14 @@ class MenuController(object):
             self.reorganize()
 
     def reorganize(self):
-        self._menu.clear()
+
+        # if .clear()  I get: RuntimeError: wrapped C/C++ object of type QAction has been deleted
+        #self._menu.clear()
 
         for key in self._items.keys():
             item = self._items[key]
+
+            #print('key = {0}, name = {1}, item = {2}'.format(key,item.get_name(), item))
 
             if isinstance(item, MenuController):
                 self._menu.addMenu(item.get_menu())

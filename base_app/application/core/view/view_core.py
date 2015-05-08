@@ -51,7 +51,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self._build_file_menu()
         self._build_edit_menu()
         self._build_tool_menu()
-        self._build_window_menu()
+        #self._build_window_menu()
         self._build_help_menu()
 
         self.menu_controller.reorganize()
