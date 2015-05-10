@@ -51,10 +51,6 @@ class MDIController(object):
 
         self._subscribe_to_pub()
 
-        # Build and connect window menu... need to tie to active docs
-        #self.build_window_menu()
-        #self._connect_window_menu()
-
     def _subscribe_to_pub(self):
         pub.subscribe(self.tile_windows_horizontally, "mdi.tile_windows_horizontally")
         pub.subscribe(self.tile_windows_vertically, "mdi.tile_windows_vertically")
@@ -130,6 +126,11 @@ class MDIController(object):
         if index == len(self._mdiarea_subwindows):
             self._next_window()
 
+        self._update_window_view()
+        self.build_window_menu(index)
+
+    def _update_window_view(self):
+
         # This maintains the state on window close.. default QT behavior on close is to show tiled, but un-organized
         if self._window_mode == "maximized":
             if self._mdiarea.activeSubWindow():
@@ -139,22 +140,17 @@ class MDIController(object):
                     self._mdiarea.setActiveSubWindow(self._mdiarea_subwindows[0])
                     self._mdiarea.activeSubWindow().showMaximized()
         elif self._window_mode == "horizontal_tile":
-            self.tile_windows_horizontally(self._show_tabs)
+            self.tile_windows_horizontally()
         elif self._window_mode == "vertical_tile":
-            self.tile_windows_vertically(self._show_tabs)
+            self.tile_windows_vertically()
         elif self._window_mode == "cascade":
             self.cascade_windows()
 
-
-        self.build_window_menu(index)
-
     def build_window_menu(self, index):
 
-        #delete previous window menu
+        # If the window_menu was created... Delete it and clear the menuBar
         if hasattr(self,'window_menu'):
-            print('trying to delete')
             self._view.menu_controller.delete_item(self.window_menu)
-            print('deleted')
 
         self.window_menu = self._view.menu_controller.add_menu('Window')
 
@@ -185,45 +181,52 @@ class MDIController(object):
 
         self.action_window_new.triggered.connect(self._file_new)
         self.action_window_close.triggered.connect(self._file_close)
-
-        # this stuff might be better in mdi_controller, since not all apps will have mdi area
         self.action_window_htile.triggered.connect(self.tile_windows_horizontally)
         self.action_window_vtile.triggered.connect(self.tile_windows_vertically)
         self.action_window_cascade.triggered.connect(self.cascade_windows)
         self.action_window_showtabs.triggered.connect(self.show_window_tabs)
 
-        #Active Windows
-        #menu = self.window_menu.get_menu()
-        #wdw_action_group = QtGui.QActionGroup(menu)
-        #wdw_action_group.isExclusive()
-        for wdw in self._mdiarea_subwindows:
-            action_wdw_item = self.window_menu.add_action(wdw.windowTitle()).get_action()
-            #action_wdw_item = menu.addAction(wdw.windowTitle())
-            """:type: QtGui.QAction"""
-            action_wdw_item.setCheckable(True)
-            if wdw == self._mdiarea.activeSubWindow():
-                action_wdw_item.setChecked(True)
-            action_wdw_item.triggered.connect(lambda: self.activate_subwindow(wdw))
-
         # Move Window to Last - 1
+        # todo: is this standard, or should the MDI_Controller be told where to place the Window Menu
         self._view.menu_controller.move_item(len(self._view.menu_controller._items)-1,len(self._view.menu_controller._items)-2)
         self._view.menu_controller.reorganize()
 
-    def activate_subwindow(self,wdw):
-        if wdw in self._mdiarea_subwindows:
-            self._mdiarea.setActiveSubWindow(wdw)
-            print('activated index = {0}'.format(self._mdiarea_subwindows.index(wdw)))
+        # Add Open Documents Window Menu Actions
+        #   after .reorganize() since the action group not within the MenuController class
+        menu = self.window_menu.get_menu()
+        self.wdw_action_group = QtGui.QActionGroup(self._mdiarea,exclusive=True)
+        self.wdw_action_group.setExclusive(True)
+        self.wdw_action_group.checkedAction()
+        for wdw in self._mdiarea_subwindows:
+            action_wdw_item = self.wdw_action_group.addAction(QtGui.QAction(wdw.windowTitle(),self._mdiarea, checkable=True))
+            """:type: QtGui.QAction"""
+            action_wdw_item.setCheckable(True)
+            if wdw == self._mdiarea.currentSubWindow(): ## note: active is old
+                action_wdw_item.setChecked(True)
+            action_wdw_item.triggered.connect(self._select_window_from_menu)
+            menu.addAction(action_wdw_item)
 
-    def _connect_window_menu(self):
 
-        self.action_window_new.triggered.connect(self._file_new)
-        self.action_window_close.triggered.connect(self._file_close)
+    def _select_window_from_menu(self,wdw):
+        actions = self.wdw_action_group.actions()
+        for action in self.wdw_action_group.actions():
+            if action.isChecked():
+                index = actions.index(action)
 
-        # this stuff might be better in mdi_controller, since not all apps will have mdi area
-        self.action_window_htile.triggered.connect(self.tile_windows_horizontally)
-        self.action_window_vtile.triggered.connect(self.tile_windows_vertically)
-        self.action_window_cascade.triggered.connect(self.cascade_windows)
-        self.action_window_showtabs.triggered.connect(self.show_window_tabs)
+        self._set_active_document(index)
+
+    def _update_window_actions(self):
+        """ Update the checked item in the window menu.
+
+        .. note:: This fires before the window_menu is rebuilt.  Therefore must check for the action_group attribute and
+                  also if the index is valid.
+        """
+        index = self.get_current_index()
+        if index == -1: return
+
+        if hasattr(self, 'wdw_action_group'):
+            if index > len(self.wdw_action_group.actions())-1:return
+            self.wdw_action_group.actions()[index].setChecked(True)
 
     def _subwindow_activated(self, subwindow):
         index = self.get_subwindow_index(subwindow)
@@ -234,6 +237,8 @@ class MDIController(object):
             print('subwindow activated: index = {0}'.format(index))
 
         pub.publish("program.set_active_document", index=index)
+
+        self._update_window_actions()
 
     def _set_active_document(self, index):
 
@@ -252,7 +257,7 @@ class MDIController(object):
         subwindow.showMaximized()
         self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
 
-    def tile_windows_horizontally(self, show_tabs = True):
+    def tile_windows_horizontally(self):
         self._window_mode = "horizontal_tile"
 
         # todo:  investigate: an mdiarea attribute is adjusted on cascadeSubWindows and tileSubWindows
@@ -262,10 +267,11 @@ class MDIController(object):
 
         position = QtCore.QPoint(0, 0)
         for subwindow in self._mdiarea.subWindowList():
-            if show_tabs == True:
-                tab_height = self._mdiarea.findChild(QtGui.QTabBar).height()
+            if self.action_window_showtabs.isChecked():
+                tab_height = self.tab_height
             else:
                 tab_height = 0
+            print('tab_height = {0}'.format(self.tab_height))
             new_width = self._mdiarea.size().width() / (len(self._mdiarea.subWindowList()))
             new_height = self._mdiarea.size().height() - tab_height
 
@@ -276,7 +282,7 @@ class MDIController(object):
             subwindow.move(position)
             position.setX(position.x() + subwindow.width())
 
-    def tile_windows_vertically(self, show_tabs=True):
+    def tile_windows_vertically(self):
         self._window_mode = "vertical_tile"
 
         # todo:  investigate: some mdiarea attribute is adjusted on cascadeSubWindows and tileSubWindows
@@ -284,12 +290,12 @@ class MDIController(object):
         # if not, I miss some mdiarea attribute and doesn't display properly
         self._mdiarea.cascadeSubWindows()
 
-        if show_tabs == True:
+        if self.action_window_showtabs.isChecked():
             #tab_height = self._mdiarea.findChild(QtGui.QTabBar).height()
-            tab_height = self.get_tab_height()
+            tab_height = self.tab_height
         else:
             tab_height = 0
-
+        print('tab_height = {0}'.format(self.tab_height))
         position = QtCore.QPoint(0, 0)
         for subwindow in self._mdiarea.subWindowList():
             new_width = self._mdiarea.size().width()
@@ -303,7 +309,13 @@ class MDIController(object):
             position.setY(position.y() + subwindow.height())
 
     def get_tab_height(self):
-        return self._mdiarea.findChild(QtGui.QTabBar).height()
+        tab_bar = self._mdiarea.findChild(QtGui.QTabBar)
+        if tab_bar != None:
+            tab_height =  self._mdiarea.findChild(QtGui.QTabBar).height()
+        else:
+            tab_height = 0
+
+        return tab_height
 
     def cascade_windows(self):
         self._window_mode = "cascade"
@@ -314,9 +326,9 @@ class MDIController(object):
             subwindow.setMinimumSize(w_min, h_min)
         self._mdiarea.cascadeSubWindows()
 
-    def show_window_tabs(self, show_tabs=True):
-        self._show_tabs = show_tabs
-        if show_tabs == True:
+    def show_window_tabs(self):
+
+        if self.action_window_showtabs.isChecked():
             print("true")
             self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
 
@@ -324,10 +336,14 @@ class MDIController(object):
 
             # Have to find the QTabBar again.....
             # @ Nick: do you only need to find the tab bar once and then store it as an attribute?
+            # @ Mike: unfortunately seems to be destroyed on view change
+            #
             #self._mdiarea.findChild(QtGui.QTabBar).setExpanding(False)
-        elif show_tabs == False:
+        else:
             self._mdiarea.setViewMode(QtGui.QMdiArea.SubWindowView)
-            self.cascade_windows()
+
+            # Note .SubWindowView changed to a tiled un_organized window, so update the state
+            self._update_window_view()
 
     def setup_tabbar(self):
         """Configure the TabBar.
@@ -338,14 +354,14 @@ class MDIController(object):
         self._mdiarea_tabbar.setExpanding(False)
         #self._mdiarea_tabbar.setSelectionBehaviorOnRemove(2)
         self._mdiarea_tabbar.setUsesScrollButtons(False)
-        _tab_height = self.get_tab_height()
+        self.tab_height = self.get_tab_height()
 
         # Add Widget to TabBar
         _gridLayout = QtGui.QGridLayout(self._mdiarea_tabbar)
         _gridLayout.setAlignment(QtCore.Qt.AlignVCenter)
         _gridLayout.setMargin(0)
         _gridLayout.setHorizontalSpacing(0)
-        _spacerItem = QtGui.QSpacerItem(_tab_height, _tab_height, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        _spacerItem = QtGui.QSpacerItem(self.tab_height, self.tab_height, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         _spacerItem.setAlignment(QtCore.Qt.AlignVCenter)
         _gridLayout.addItem(_spacerItem,0,0,1,1)
 
@@ -357,9 +373,9 @@ class MDIController(object):
         _closebtn.setSizePolicy(_sizePolicy)
         _leftbtn.setSizePolicy(_sizePolicy)
         _rightbtn.setSizePolicy(_sizePolicy)
-        _closebtn.setFixedSize(QtCore.QSize(_tab_height, _tab_height))
-        _leftbtn.setFixedSize(QtCore.QSize(_tab_height, _tab_height))
-        _rightbtn.setFixedSize(QtCore.QSize(_tab_height, _tab_height))
+        _closebtn.setFixedSize(QtCore.QSize(self.tab_height, self.tab_height))
+        _leftbtn.setFixedSize(QtCore.QSize(self.tab_height, self.tab_height))
+        _rightbtn.setFixedSize(QtCore.QSize(self.tab_height, self.tab_height))
         _closebtn.setText("")
         _leftbtn.setText("")
         _rightbtn.setText("")

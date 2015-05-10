@@ -126,13 +126,18 @@ class MenuController(object):
 
     def reorganize(self):
 
-        # if .clear()  I get: RuntimeError: wrapped C/C++ object of type QAction has been deleted
-        #self._menu.clear()
+        # @Mike... If this is a QMenuBar, clearing it once works.... otherwise it then clears the menus within
+        #          the MenuBar also, which leads to a deleted wrapper item error when reorganize is ran twice
+        #
+        #          Not sure.... somehow IF its a QMenuBar, just need to clear the MenuBar, not the MenuBar and then its items
+        #                       IF a QMenu... but not called from a QMenuBar reorganize, then should clear
+        #                                         - but this would have to be done in another def, or before .reorganize
+
+        if isinstance(self._menu, QtGui.QMenuBar):
+            self._menu.clear()
 
         for key in self._items.keys():
             item = self._items[key]
-
-            #print('key = {0}, name = {1}, item = {2}'.format(key,item.get_name(), item))
 
             if isinstance(item, MenuController):
                 self._menu.addMenu(item.get_menu())

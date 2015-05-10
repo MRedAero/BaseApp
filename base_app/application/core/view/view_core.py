@@ -51,7 +51,10 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self._build_file_menu()
         self._build_edit_menu()
         self._build_tool_menu()
+
+        # todo: move window_menu build to mdi controller and delete here
         #self._build_window_menu()
+
         self._build_help_menu()
 
         self.menu_controller.reorganize()
@@ -89,6 +92,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self.tool_menu = self.menu_controller.add_menu('Tools')
         """:type: QtGui.QMenu"""
 
+    # todo: move to mdi_controller.. delete here
     def _build_window_menu(self):
 
         self.window_menu = self.menu_controller.add_menu('Window')
@@ -116,8 +120,6 @@ class BaseAppViewCore(QtGui.QMainWindow):
 
         # why are the separators named?
         self.window_menu.add_separator('3')
-
-
 
     def _build_help_menu(self):
 

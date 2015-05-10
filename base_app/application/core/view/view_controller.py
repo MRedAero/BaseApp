@@ -18,6 +18,8 @@ class BaseAppViewController(object):
         """:type: BaseAppViewCore"""
 
         self._connect_signals()
+
+        # todo: move to mdi_controller.. delete here
         #self._connect_window_menu()
 
     def get_view(self):
@@ -36,7 +38,7 @@ class BaseAppViewController(object):
         self._view.action_file_settings.triggered.connect(self._file_settings)
         self._view.action_file_exit.triggered.connect(self._file_exit)
 
-
+    # todo: move to mdi_controller.. delete here
     def _connect_window_menu(self):
 
         self._view.action_window_new.triggered.connect(self._file_new)
