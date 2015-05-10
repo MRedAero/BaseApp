@@ -42,8 +42,10 @@ class MDIController(object):
         self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
         self._view.grid_layout.addWidget(self._mdiarea, 0, 0, 1, 1)
         self._mdiarea.subWindowActivated.connect(self._subwindow_activated)
+
+
+        # todo: _window_mode not set on windowMaximize.. need to set on subwindow Maximize event
         self._window_mode = "maximized"
-        self._show_tabs = True
 
         # List of active subwindows in order of creation (append on add, remove on close)
         # Allows windows/tabs to be moved and still retain their index
@@ -271,7 +273,9 @@ class MDIController(object):
                 tab_height = self.tab_height
             else:
                 tab_height = 0
-            print('tab_height = {0}'.format(self.tab_height))
+
+            #print('tab_height = {0}'.format(self.tab_height))
+
             new_width = self._mdiarea.size().width() / (len(self._mdiarea.subWindowList()))
             new_height = self._mdiarea.size().height() - tab_height
 
@@ -295,7 +299,9 @@ class MDIController(object):
             tab_height = self.tab_height
         else:
             tab_height = 0
-        print('tab_height = {0}'.format(self.tab_height))
+
+        #print('tab_height = {0}'.format(self.tab_height))
+
         position = QtCore.QPoint(0, 0)
         for subwindow in self._mdiarea.subWindowList():
             new_width = self._mdiarea.size().width()
@@ -329,7 +335,6 @@ class MDIController(object):
     def show_window_tabs(self):
 
         if self.action_window_showtabs.isChecked():
-            print("true")
             self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
 
             self.setup_tabbar()
@@ -423,8 +428,6 @@ class MdiArea(QtGui.QMdiArea):
         self.centered = False
 
     def paintEvent(self, event):
-
-        print('painting')
         if self.background_pixmap:
             painter = QtGui.QPainter()
             painter.begin(self.viewport())
