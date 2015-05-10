@@ -104,7 +104,11 @@ class BaseAppDocumentController(object):
             self._active_document = None
             return
 
+        if not self._documents:
+            return
+
         self._active_document = self._documents[index]
+        pub.publish("mdi.set_active_document", index=index)
 
     def _set_file(self, file_):
         if self._active_document:

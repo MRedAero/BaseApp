@@ -20,7 +20,7 @@ class BaseAppViewController(object):
         self._connect_signals()
 
         # todo: move to mdi_controller.. delete here
-        #self._connect_window_menu()
+        self._connect_window_menu()
 
     def get_view(self):
         return self._view
@@ -44,7 +44,6 @@ class BaseAppViewController(object):
         self._view.action_window_new.triggered.connect(self._file_new)
         self._view.action_window_close.triggered.connect(self._file_close)
 
-        # this stuff might be better in mdi_controller, since not all apps will have mdi area
         self._view.action_window_htile.triggered.connect(self._tile_windows_horizontally)
         self._view.action_window_vtile.triggered.connect(self._tile_windows_vertically)
         self._view.action_window_cascade.triggered.connect(self._cascade_windows)
@@ -100,13 +99,13 @@ class BaseAppViewController(object):
         self._view.removeDockWidget(dock_widget)
 
     def _tile_windows_horizontally(self):
-        pub.publish("mdi.tile_windows_horizontally", show_tabs=self._view.action_window_showtabs.isChecked())
+        pub.publish("mdi.tile_windows_horizontally")
 
     def _tile_windows_vertically(self):
-        pub.publish("mdi.tile_windows_vertically", show_tabs=self._view.action_window_showtabs.isChecked())
+        pub.publish("mdi.tile_windows_vertically")
 
     def _cascade_windows(self):
         pub.publish("mdi.cascade_windows")
 
     def _show_window_tabs(self):
-        pub.publish("mdi.show_window_tabs", show_tabs=self._view.action_window_showtabs.isChecked())
+        pub.publish("mdi.show_window_tabs")

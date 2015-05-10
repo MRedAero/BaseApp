@@ -2,7 +2,7 @@ __author__ = 'Michael Redmond'
 
 from PyQt4 import QtGui, QtCore
 
-from base_app.utilities.menus import MenuController
+from base_app.utilities.menus import MenuController, ActionController, SeparatorController
 
 
 class BaseAppViewCore(QtGui.QMainWindow):
@@ -52,8 +52,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
         self._build_edit_menu()
         self._build_tool_menu()
 
-        # todo: move window_menu build to mdi controller and delete here
-        #self._build_window_menu()
+        self._build_window_menu()
 
         self._build_help_menu()
 
@@ -62,7 +61,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
     def _build_file_menu(self):
 
         self.file_menu = self.menu_controller.add_menu('File')
-        """:type: QtGui.QMenu"""
+        """:type: MenuController"""
         self.action_file_new = self.file_menu.add_action('New...').get_action()
         """:type: QtGui.QAction"""
         self.action_file_open = self.file_menu.add_action('Open...').get_action()
@@ -85,18 +84,17 @@ class BaseAppViewCore(QtGui.QMainWindow):
     def _build_edit_menu(self):
 
         self.edit_menu = self.menu_controller.add_menu('Edit')
-        """:type: QtGui.QMenu"""
+        """:type: MenuController"""
 
     def _build_tool_menu(self):
 
         self.tool_menu = self.menu_controller.add_menu('Tools')
-        """:type: QtGui.QMenu"""
+        """:type: MenuController"""
 
-    # todo: move to mdi_controller.. delete here
     def _build_window_menu(self):
 
         self.window_menu = self.menu_controller.add_menu('Window')
-        """:type: QtGui.QMenu"""
+        """:type: MenuController"""
         self.action_window_new = self.window_menu.add_action('New Window...').get_action()
         """:type: QtGui.QAction"""
         self.action_window_close = self.window_menu.add_action('Close Window').get_action()
@@ -113,7 +111,7 @@ class BaseAppViewCore(QtGui.QMainWindow):
 
         # why are the separators named?
         self.window_menu.add_separator('2')
-        self.action_window_showtabs= self.window_menu.add_action('Show Tabs').get_action()
+        self.action_window_showtabs = self.window_menu.add_action('Show Tabs').get_action()
         """:type: QtGui.QAction"""
         self.action_window_showtabs.setCheckable(True)
         self.action_window_showtabs.setChecked(True)

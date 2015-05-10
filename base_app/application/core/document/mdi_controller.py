@@ -14,6 +14,10 @@ class MDIController(object):
         self._view = view
         """:type: base_app.application.core.view.view_core.BaseAppViewCore"""
 
+        self._window_menu = self._view.window_menu
+        self._action_show_tabs = self._window_menu.get_item("Show Tabs").get_action()
+
+        self._build_tab_bar = True
 
         #Optional Image Background
         # Uncomment either image or None option
@@ -50,8 +54,13 @@ class MDIController(object):
         # List of active subwindows in order of creation (append on add, remove on close)
         # Allows windows/tabs to be moved and still retain their index
         self._mdiarea_subwindows = []
+        self._subwindow_actions = []
 
         self._subscribe_to_pub()
+
+        self._subwindow_action_group = QtGui.QActionGroup(self._mdiarea, exclusive=True)
+        self._subwindow_action_group.setExclusive(True)
+        self._subwindow_action_group.checkedAction()
 
     def _subscribe_to_pub(self):
         pub.subscribe(self.tile_windows_horizontally, "mdi.tile_windows_horizontally")
@@ -59,6 +68,7 @@ class MDIController(object):
         pub.subscribe(self.cascade_windows, "mdi.cascade_windows")
         pub.subscribe(self.set_tab_view, "mdi.set_tab_view")
         pub.subscribe(self.show_window_tabs, "mdi.show_window_tabs")
+        pub.subscribe(self._set_active_document, "mdi.set_active_document")
 
     def get_mdi_area(self):
         return self._mdiarea
@@ -107,11 +117,16 @@ class MDIController(object):
         if last_tab_height == 0:
             self.setup_tabbar()
 
-        # I don't think this is needed
-        #self._mdiarea.setActiveSubWindow(subwindow)
+        new_action_controller = self._window_menu.add_action('activate_' + str(subwindow.windowTitle()), True)
+        self._subwindow_actions.append(new_action_controller)
 
-
-        self.build_window_menu(len(self._mdiarea_subwindows))
+        new_action = new_action_controller.get_action()
+        """:type: QtGui.QAction"""
+        new_action.setText(subwindow.windowTitle())
+        self._subwindow_action_group.addAction(new_action)
+        new_action.setCheckable(True)
+        new_action.setChecked(True)
+        new_action.triggered.connect(self._select_window_from_menu)
 
     def remove_subwindow(self, index):
         subwindow = self._mdiarea_subwindows[index]
@@ -129,7 +144,11 @@ class MDIController(object):
             self._next_window()
 
         self._update_window_view()
-        self.build_window_menu(index)
+
+        action = self._subwindow_actions[index]
+        self._window_menu.delete_item(action, True)
+        self._subwindow_actions.remove(action)
+        self._subwindow_action_group.removeAction(action.get_action())
 
     def _update_window_view(self):
 
@@ -148,74 +167,18 @@ class MDIController(object):
         elif self._window_mode == "cascade":
             self.cascade_windows()
 
-    def build_window_menu(self, index):
-
-        # If the window_menu was created... Delete it and clear the menuBar
-        if hasattr(self,'window_menu'):
-            self._view.menu_controller.delete_item(self.window_menu)
-
-        self.window_menu = self._view.menu_controller.add_menu('Window')
-
-        """:type: QtGui.QMenu"""
-        self.action_window_new = self.window_menu.add_action('New Window...').get_action()
-        """:type: QtGui.QAction"""
-        self.action_window_close = self.window_menu.add_action('Close Window').get_action()
-        """:type: QtGui.QAction"""
-
-        # why are the separators named?
-        self.window_menu.add_separator('1')
-        self.action_window_htile = self.window_menu.add_action('Tile Horizontally').get_action()
-        """:type: QtGui.QAction"""
-        self.action_window_vtile = self.window_menu.add_action('Tile Vertically').get_action()
-        """:type: QtGui.QAction"""
-        self.action_window_cascade = self.window_menu.add_action('Cascade').get_action()
-        """:type: QtGui.QAction"""
-
-        # why are the separators named?
-        self.window_menu.add_separator('2')
-        self.action_window_showtabs= self.window_menu.add_action('Show Tabs').get_action()
-        """:type: QtGui.QAction"""
-        self.action_window_showtabs.setCheckable(True)
-        self.action_window_showtabs.setChecked(True)
-
-        # why are the separators named?
-        self.window_menu.add_separator('3')
-
-        self.action_window_new.triggered.connect(self._file_new)
-        self.action_window_close.triggered.connect(self._file_close)
-        self.action_window_htile.triggered.connect(self.tile_windows_horizontally)
-        self.action_window_vtile.triggered.connect(self.tile_windows_vertically)
-        self.action_window_cascade.triggered.connect(self.cascade_windows)
-        self.action_window_showtabs.triggered.connect(self.show_window_tabs)
-
-        # Move Window to Last - 1
-        # todo: is this standard, or should the MDI_Controller be told where to place the Window Menu
-        self._view.menu_controller.move_item(len(self._view.menu_controller._items)-1,len(self._view.menu_controller._items)-2)
-        self._view.menu_controller.reorganize()
-
-        # Add Open Documents Window Menu Actions
-        #   after .reorganize() since the action group not within the MenuController class
-        menu = self.window_menu.get_menu()
-        self.wdw_action_group = QtGui.QActionGroup(self._mdiarea,exclusive=True)
-        self.wdw_action_group.setExclusive(True)
-        self.wdw_action_group.checkedAction()
-        for wdw in self._mdiarea_subwindows:
-            action_wdw_item = self.wdw_action_group.addAction(QtGui.QAction(wdw.windowTitle(),self._mdiarea, checkable=True))
-            """:type: QtGui.QAction"""
-            action_wdw_item.setCheckable(True)
-            if wdw == self._mdiarea.currentSubWindow(): ## note: active is old
-                action_wdw_item.setChecked(True)
-            action_wdw_item.triggered.connect(self._select_window_from_menu)
-            menu.addAction(action_wdw_item)
-
-
-    def _select_window_from_menu(self,wdw):
-        actions = self.wdw_action_group.actions()
-        for action in self.wdw_action_group.actions():
+    def _select_window_from_menu(self, subwindow):
+        actions = self._subwindow_action_group.actions()
+        for action in self._subwindow_action_group.actions():
             if action.isChecked():
                 index = actions.index(action)
+                break
 
-        self._set_active_document(index)
+        # can't do this
+        #self._set_active_document(index)
+
+        # must do this
+        pub.publish("program.set_active_document", index=index)
 
     def _update_window_actions(self):
         """ Update the checked item in the window menu.
@@ -224,36 +187,38 @@ class MDIController(object):
                   also if the index is valid.
         """
         index = self.get_current_index()
-        if index == -1: return
+        if index < 0:
+            return
 
-        if hasattr(self, 'wdw_action_group'):
-            if index > len(self.wdw_action_group.actions())-1:return
-            self.wdw_action_group.actions()[index].setChecked(True)
+        if index > len(self._subwindow_action_group.actions()) - 1:
+            return
+
+        self._subwindow_action_group.actions()[index].setChecked(True)
 
     def _subwindow_activated(self, subwindow):
         index = self.get_subwindow_index(subwindow)
         #print 'subwindow activated = %d' % index
-        if subwindow in self._mdiarea.subWindowList():
-            print('subwindow activated: index = {0} : title = {1}'.format(index, subwindow.windowTitle()))
-        else:
-            print('subwindow activated: index = {0}'.format(index))
+        #if subwindow in self._mdiarea.subWindowList():
+        #    print('subwindow activated: index = {0} : title = {1}'.format(index, subwindow.windowTitle()))
+        #else:
+        #    print('subwindow activated: index = {0}'.format(index))
 
         pub.publish("program.set_active_document", index=index)
 
-        self._update_window_actions()
-
     def _set_active_document(self, index):
+
+        print 'set active document in mdi controller = %d' % index
 
         if self._mdiarea_subwindows[index] in self._mdiarea.subWindowList():
             subwindow = self._mdiarea_subwindows[index]
         else:
             subwindow = self._mdiarea.subWindowList()[0]
 
-        self._skip = 1
         self._mdiarea.setActiveSubWindow(subwindow)
-        self._skip = 0
 
         print "%d = %d" % (index, self.get_current_index())
+
+        self._update_window_actions()
 
     def set_tab_view(self, subwindow):
         subwindow.showMaximized()
@@ -269,7 +234,7 @@ class MDIController(object):
 
         position = QtCore.QPoint(0, 0)
         for subwindow in self._mdiarea.subWindowList():
-            if self.action_window_showtabs.isChecked():
+            if self._action_show_tabs.isChecked():
                 tab_height = self.tab_height
             else:
                 tab_height = 0
@@ -294,7 +259,7 @@ class MDIController(object):
         # if not, I miss some mdiarea attribute and doesn't display properly
         self._mdiarea.cascadeSubWindows()
 
-        if self.action_window_showtabs.isChecked():
+        if self._action_show_tabs.isChecked():
             #tab_height = self._mdiarea.findChild(QtGui.QTabBar).height()
             tab_height = self.tab_height
         else:
@@ -334,7 +299,7 @@ class MDIController(object):
 
     def show_window_tabs(self):
 
-        if self.action_window_showtabs.isChecked():
+        if self._action_show_tabs.isChecked():
             self._mdiarea.setViewMode(QtGui.QMdiArea.TabbedView)
 
             self.setup_tabbar()
@@ -350,7 +315,13 @@ class MDIController(object):
             # Note .SubWindowView changed to a tiled un_organized window, so update the state
             self._update_window_view()
 
+            self._build_tab_bar = True
+
     def setup_tabbar(self):
+
+        if not self._build_tab_bar:
+            return
+
         """Configure the TabBar.
 
         """
@@ -404,6 +375,8 @@ class MDIController(object):
         _rightbtn.pressed.connect(self._next_window)
         _leftbtn.pressed.connect(self._previous_window)
 
+        self._build_tab_bar = False
+
     def _file_close(self):
         pub.publish('program.close_file', index=self._mdiarea.subWindowList().index(self._mdiarea.currentSubWindow()))
 
@@ -411,10 +384,30 @@ class MDIController(object):
         pub.publish('program.new_file')
 
     def _next_window(self):
-        self._mdiarea.activateNextSubWindow()
+        # windows can never be activated this way
+        #self._mdiarea.activateNextSubWindow()
+
+        new_index = self.get_current_index() + 1
+        if new_index >= len(self._mdiarea_subwindows):
+            new_index = 0
+
+        print 'new_index = %d' % new_index
+
+        # they must be activated this way to have the correct document set
+        pub.publish("program.set_active_document", index=new_index)
 
     def _previous_window(self):
-        self._mdiarea.activatePreviousSubWindow()
+        # windows can never be activated this way
+        #self._mdiarea.activatePreviousSubWindow()
+
+        new_index = self.get_current_index() - 1
+        if new_index < 0:
+            new_index = len(self._mdiarea_subwindows) - 1
+
+        print 'new_index = %d' % new_index
+
+        # they must be activated this way to have the correct document set
+        pub.publish("program.set_active_document", index=new_index)
 
 
 

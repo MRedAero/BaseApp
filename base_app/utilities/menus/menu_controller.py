@@ -47,7 +47,8 @@ class MenuController(object):
             print "action name %s already exists!" % action_name
             return
 
-        action = ActionController(QtGui.QAction(self._menu), action_name)
+        #action = ActionController(QtGui.QAction(self._menu), action_name)
+        action = ActionController(QtGui.QAction(None), action_name)
 
         self._items[action_name] = action
 
@@ -133,8 +134,8 @@ class MenuController(object):
         #                       IF a QMenu... but not called from a QMenuBar reorganize, then should clear
         #                                         - but this would have to be done in another def, or before .reorganize
 
-        if isinstance(self._menu, QtGui.QMenuBar):
-            self._menu.clear()
+        #if isinstance(self._menu, QtGui.QMenuBar):
+        self._menu.clear()
 
         for key in self._items.keys():
             item = self._items[key]
